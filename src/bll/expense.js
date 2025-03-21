@@ -1,44 +1,45 @@
 'use strict';
 
 const expenseModel = require("../models/expense");
-//const contributionModel = require("../models/contribution");
-
 const groupBll = require("./group");
+const { USER_ROLES } = require("../enums/user");
 
-const USER_ROLES = require("../enums/user").ROLES;
-
-/**
- * Crea un nuevo gasto
- * @param {Object} data - Datos del gasto a crear
- * @param {Object} user - Usuario que realiza la petición
- */
 exports.createExpense = async (data, user) => {
-	let {
-		amount,
-		description, 
-		category, 
-		paidBy, 
-		group, 
-	} = data;
+    const {
+        amount,
+        description,
+        category,
+        paidBy,
+        group,
+    } = data;
 
-	group = group && group._id ? group._id : group;
-	paidBy = paidBy && paidBy._id ? paidBy._id : paidBy;
-	category = category && category._id ? category._id : category;
+    // Normalizar IDs si se pasan objetos
+    const groupId = group && group._id ? group._id : group;
+    const paidById = paidBy && paidBy._id ? paidBy._id : paidBy;
+    const categoryId = category && category._id ? category._id : category;
 
-	// Verificar que el usuario pertenezca al grupo
-	if (user && user.role.include(USER_ROLES.ADMIN)|| await groupBll.validateUserInGroup(user, group)) {
-		throw new Error("No tienes permiso para agregar gastos a este grupo.");
-	}
+    // Verificar que el usuario pertenezca al grupo o sea administrador
+    const isAdmin = user && user.role && user.role.includes(USER_ROLES.ADMIN);
+    const isUserInGroup = await groupBll.validateUserInGroup(user, groupId);
 
-	const query = new expenseModel({
-		amount: amount,
-		description: description,
-		category: categoryId || null,
-		paidBy: paidBy,
-		group: group,
-	});
+    if (!isAdmin && !isUserInGroup) {
+        throw new Error("No tienes permiso para agregar gastos a este grupo.");
+    }
 
-	const savedExpense = await query.save();;
+    const newExpense = new expenseModel({
+        amount: amount,
+        description: description,
+        category: categoryId || null,
+        paidBy: paidById,
+        group: groupId,
+        createdBy: user ? user._id : null,
+    });
 
-	return savedExpense;
+    try {
+        const savedExpense = await newExpense.save();
+        return savedExpense;
+    } catch (error) {
+        console.error("Error al guardar el gasto:", error);
+        throw new Error("Hubo un error al guardar el gasto.");
+    }
 };
