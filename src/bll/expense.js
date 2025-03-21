@@ -13,15 +13,20 @@ const USER_ROLES = require("../enums/user").ROLES;
  * @param {Object} user - Usuario que realiza la petición
  */
 exports.createExpense = async (data, user) => {
-	let { amount, description, category, paidBy, group, contributions } = data;
-	let createdContributions = [];
+	let {
+		amount,
+		description, 
+		category, 
+		paidBy, 
+		group, 
+	} = data;
 
 	group = group && group._id ? group._id : group;
 	paidBy = paidBy && paidBy._id ? paidBy._id : paidBy;
 	category = category && category._id ? category._id : category;
 
 	// Verificar que el usuario pertenezca al grupo
-	if (await groupBll.validateUserInGroup(paidBy, group)) {
+	if (user && user.role.include(USER_ROLES.ADMIN)|| await groupBll.validateUserInGroup(user, group)) {
 		throw new Error("No tienes permiso para agregar gastos a este grupo.");
 	}
 
@@ -33,24 +38,7 @@ exports.createExpense = async (data, user) => {
 		group: group,
 	});
 
-	const savedExpense = await query.save();
-	
-	if (contributions && contributions.length) {
-		for (const contribution of contributions) {
-			const contributionModel = new contributionModel({
-				expenseId: savedExpense._id,
-				user: contribution.userId,
-				amount: contribution.amount,
-				percentage: contribution.percentage,
-				status: CONTRIBUTION_STATUS.PENDING,
-			});
-			const savedContribution = await contributionModel.save();
-			createdContributions.push(savedContribution._id);
-		}
-	}
+	const savedExpense = await query.save();;
 
-	expense.contributions = contributionDocs;
-	await expense.save();
-
-	return expense;
+	return savedExpense;
 };
