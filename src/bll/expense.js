@@ -1,24 +1,24 @@
 'use strict';
 
 const expenseModel = require("../models/expense");
+
 const groupBll = require("./group");
+
 const { USER_ROLES } = require("../enums/user");
 
+function applyPopulateOptions(query, options) {
+	const { populateContributions } = options;
+
+	if (populateContributions === "true") {
+		query = query.populate("contributions");
+	}
+
+	return query;
+}
+
 exports.createExpense = async function createExpense(data, user) {
-	const {
-		amount,
-		description,
-		category,
-		paidBy,
-		group,
-	} = data;
+	data.createdBy = user ? user._id : null;
 
-	// Normalizar IDs si se pasan objetos
-	const groupId = group && group._id ? group._id : group;
-	const paidById = paidBy && paidBy._id ? paidBy._id : paidBy;
-	const categoryId = category && category._id ? category._id : category;
-
-	// Verificar que el usuario pertenezca al grupo o sea administrador
 	const isAdmin = user && user.role && user.role.includes(USER_ROLES.ADMIN);
 	const isMember = await groupBll.validateUserInGroup(user, groupId);
 
@@ -26,15 +26,7 @@ exports.createExpense = async function createExpense(data, user) {
 		throw new Error("No tienes permiso para agregar gastos a este grupo.");
 	}
 
-	const newExpense = new expenseModel({
-		amount: amount,
-		description: description,
-		category: categoryId || null,
-		paidBy: paidById,
-		group: groupId,
-		createdBy: user ? user._id : null,
-	});
-
+	const newExpense = new expenseModel(data);
 	try {
 		const savedExpense = await newExpense.save();
 		return savedExpense;
@@ -45,18 +37,12 @@ exports.createExpense = async function createExpense(data, user) {
 };
 
 exports.getExpenseById = async function getExpenseById(expenseId, user, options = {}) {
-	const { populateContributions } = options;
-
 	let query = expenseModel.findById(expenseId);
+	query = applyPopulateOptions(query, options);
 	query.populate("group");
-
-	if (populateContributions === "true") {
-		query = query.populate("contributions");
-	}
 
 	try {
 		const expense = await query;
-
 		if (!expense) {
 			throw new Error("Gasto no encontrado.");
 		}
@@ -75,34 +61,19 @@ exports.getExpenseById = async function getExpenseById(expenseId, user, options 
 	}
 };
 
-exports.updateExpense = async function updateExpense(expenseId, data, user) {
-	const {
-		amount,
-		description,
-		category,
-		paidBy,
-		group,
-	} = data;
-
+exports.updateExpense = async function updateExpense(expenseId, newData, user) {
 	const expense = await expenseModel.findById(expenseId).populate("group");
-
 	if (!expense) {
 		throw new Error("Gasto no encontrado.");
 	}
 
 	const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 	const isMember = expense.group?.members?.includes(user._id);
-
 	if (!isAdmin && !isMember) {
 		throw new Error("No tienes permiso para actualizar este gasto.");
 	}
 
-	if (amount) expense.amount = amount;
-	if (description) expense.description = description;
-	if (category) expense.category = category;
-	if (paidBy) expense.paidBy = paidBy;
-	if (group) expense.group = group;
-
+	Object.assign(expense, newData);
 	try {
 		await expense.save();
 	} catch (error) {
@@ -113,7 +84,6 @@ exports.updateExpense = async function updateExpense(expenseId, data, user) {
 
 exports.deleteExpense = async function deleteExpense(expenseId, user) {
 	const expense = await expenseModel.findById(expenseId);
-
 	if (!expense) {
 		throw new Error("Gasto no encontrado.");
 	}
@@ -127,6 +97,7 @@ exports.deleteExpense = async function deleteExpense(expenseId, user) {
 
 	try {
 		await expense.delete();
+		return expense;
 	} catch (error) {
 		console.error("Error al eliminar el gasto:", error);
 		throw new Error("Hubo un error al eliminar el gasto.");
@@ -134,18 +105,12 @@ exports.deleteExpense = async function deleteExpense(expenseId, user) {
 };
 
 exports.getExpensesByGroup = async function getExpensesByGroup(groupId, user, options = {}) {
-	const { populateContributions } = options;
-
 	let query = expenseModel.find({ group: groupId });
+	query = applyPopulateOptions(query, options);
 	query.populate("group");
-
-	if (populateContributions === "true") {
-		query = query.populate("contributions");
-	}
 
 	try {
 		const expenses = await query;
-
 		if (!expenses) {
 			throw new Error("No se encontraron gastos.");
 		}
@@ -165,25 +130,18 @@ exports.getExpensesByGroup = async function getExpensesByGroup(groupId, user, op
 };
 
 exports.getExpensesByUser = async function getExpensesByUser(userId, user, options = {}) {
-	const { populateContributions } = options;
-
 	let query = expenseModel.find({ paidBy: userId });
+	query = applyPopulateOptions(query, options);
 	query.populate("group");
-
-	if (populateContributions === "true") {
-		query = query.populate("contributions");
-	}
 
 	try {
 		const expenses = await query;
-
 		if (!expenses) {
 			throw new Error("No se encontraron gastos.");
 		}
 
 		const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 		const isMember = expense.group?.members?.includes(user._id);
-
 		if (!isAdmin && !isMember) {
 			throw new Error("No tienes permiso para ver este gasto.");
 		}

@@ -21,19 +21,9 @@ function applyPopulateOptions(query, options) {
 exports.createMovement = async function createMovement(data, user) {
 	const {
 		user: userId, // El usuario al que pertenece el movimiento (de la data)
-		type,
-		amount,
-		description,
-		category,
 	} = data;
 
-	const newMovement = new movementModel({
-		user: user,
-		type: type,
-		amount: amount,
-		description: description,
-		category: category || null,
-	});
+	const newMovement = new movementModel(data);
 
 	const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 	const isSameUser = user._id === userId;

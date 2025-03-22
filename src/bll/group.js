@@ -31,16 +31,11 @@ exports.validateUserInGroup = async function validateUserInGroup(userId, groupId
 };
 
 exports.createGroup = async function createGroup(data, user) {
-	const { name, description, profileInfo, owner, admins, members } = data;
-	const group = new groupModel({
-		name: name,
-		description: description || '',
-		profileInfo: profileInfo || {},
-		owner: owner || user._id,
-		admins: admins || [user._id],
-		members: members || [user._id]
-	});
+	data.owner = data.owner || user._id;
+	data.admins = data.admins || [user._id];
+	data.members = data.members || [user._id];
 
+	const group = new groupModel(data);
 	const createdGroup = await group.save();
 	return createdGroup;
 };
@@ -70,8 +65,6 @@ exports.getGroupById = async function getGroupById(groupId, user, options) {
 };
 
 exports.updateGroup = async function updateGroup(groupId, newData, user) {
-	const { name, description, profileInfo, owner, admins, members } = newData;
-
 	const group = await groupModel.findById(groupId);
 	if (!group) {
 		throw new Error("El grupo no existe.");
@@ -83,13 +76,7 @@ exports.updateGroup = async function updateGroup(groupId, newData, user) {
 		throw new Error("No tienes permiso para actualizar este grupo.");
 	}
 
-	if (name) group.name = name;
-	if (description) group.description = description;
-	if (profileInfo) group.profileInfo = profileInfo;
-	if (owner) group.owner = owner;
-	if (admins) group.admins = admins;
-	if (members) group.members = members;
-
+	Object.assign(group, newData);
 	try {
 		await group.save();
 		return group;
@@ -128,7 +115,6 @@ exports.addMember = async function addMember(groupId, userId, user) {
 	const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 	const isOwner = group.owner === user._id;
 	const isAdminGroup = group.admins?.includes(user._id);
-
 	if (!isAdmin && !isOwner && !isAdminGroup) {
 		throw new Error("No tienes permiso para agregar miembros a este grupo.");
 	}
@@ -166,7 +152,8 @@ exports.removeMember = async function removeMember(groupId, userId, user) {
 	group.members = group.members?.filter((member) => member !== userId) || [];
 	group.admins = group.admins?.filter((admin) => admin !== userId) || [];
 
-	return await group.save();
+	await group.save();
+	return group;
 };
 
 exports.addAdmin = async function addAdmin(groupId, userId, user) {
@@ -177,7 +164,6 @@ exports.addAdmin = async function addAdmin(groupId, userId, user) {
 
 	const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 	const isOwner = group.owner === user._id;
-
 	if (!isAdmin && !isOwner) {
 		throw new Error("No tienes permiso para agregar administradores a este grupo.");
 	}
