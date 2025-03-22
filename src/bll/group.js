@@ -1,8 +1,25 @@
 'use strict';
 
 const groupModel = require("../models/group");
-
 const { USER_ROLES } = require("../enums/user");
+
+function applyPopulateOptions(query, options) {
+	const { populateOwner, populateAdmins, populateMembers } = options;
+
+	if (populateOwner === "true") {
+		query = query.populate("owner");
+	}
+
+	if (populateAdmins === "true") {
+		query = query.populate("admins");
+	}
+
+	if (populateMembers === "true") {
+		query = query.populate("members");
+	}
+
+	return query;
+}
 
 exports.validateUserInGroup = async function validateUserInGroup(userId, groupId) {
 	const group = await groupModel.findById(groupId);
@@ -25,24 +42,12 @@ exports.createGroup = async function createGroup(data, user) {
 	});
 
 	const createdGroup = await group.save();
-	return createGroup;
+	return createdGroup;
 };
 
 exports.getGroupById = async function getGroupById(groupId, user, options) {
-	const { populateOwner, populateAdmins, populateMembers } = options;
-
 	let query = groupModel.findById(groupId);
-	if (populateOwner === "true") {
-		query = query.populate("owner");
-	}
-
-	if (populateAdmins === "true") {
-		query = query.populate("admins");
-	}
-
-	if (populateMembers === "true") {
-		query = query.populate("members");
-	}
+	query = applyPopulateOptions(query, options);
 
 	try {
 		const group = await query;
@@ -202,20 +207,8 @@ exports.removeAdmin = async function removeAdmin(groupId, userId, user) {
 };
 
 exports.getGroupsByUser = async function getGroupsByUser(userId, user, options = {}) {
-	const { populateOwner, populateAdmins, populateMembers } = options;
-
 	let query = groupModel.find({ members: userId });
-	if (populateOwner === "true") {
-		query = query.populate("owner");
-	}
-
-	if (populateAdmins === "true") {
-		query = query.populate("admins");
-	}
-
-	if (populateMembers === "true") {
-		query = query.populate("members");
-	}
+	query = applyPopulateOptions(query, options);
 
 	try {
 		const groups = await query;
@@ -237,20 +230,8 @@ exports.getGroupsByUser = async function getGroupsByUser(userId, user, options =
 };
 
 exports.getGroupsByOwner = async function getGroupsByOwner(userId, user, options = {}) {
-	const { populateOwner, populateAdmins, populateMembers } = options;
-
 	let query = groupModel.find({ owner: userId });
-	if (populateOwner === "true") {
-		query = query.populate("owner");
-	}
-
-	if (populateAdmins === "true") {
-		query = query.populate("admins");
-	}
-
-	if (populateMembers === "true") {
-		query = query.populate("members");
-	}
+	query = applyPopulateOptions(query, options);
 
 	try {
 		const groups = await query;
