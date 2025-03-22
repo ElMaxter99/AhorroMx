@@ -152,7 +152,7 @@ exports.getExpensesByGroup = async function getExpensesByGroup(groupId, user, op
 
 		const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 		const isMember = expense.group?.members?.includes(user._id);
-	
+
 		if (!isAdmin && !isMember) {
 			throw new Error("No tienes permiso para ver este gasto.");
 		}
@@ -183,7 +183,7 @@ exports.getExpensesByUser = async function getExpensesByUser(userId, user, optio
 
 		const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 		const isMember = expense.group?.members?.includes(user._id);
-	
+
 		if (!isAdmin && !isMember) {
 			throw new Error("No tienes permiso para ver este gasto.");
 		}
