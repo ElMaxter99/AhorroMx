@@ -44,7 +44,21 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: '',
     },
-    backgroundUrl: { type: String, default: '' },
+    backgroundUrl: { 
+      type: String, default: ''
+    },
+    firstName: {
+      type: String,
+      default: '',
+    },
+    lastName: {
+      type: String,
+      default: '',
+    },
+    birthDate: {
+      type: Date,
+      default: null,
+    },
   },
 
   passwordChangedAt: Date,

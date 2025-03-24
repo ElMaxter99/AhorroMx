@@ -19,9 +19,7 @@ function applyPopulateOptions(query, options) {
 }
 
 exports.createMovement = async function createMovement(data, user) {
-	const {
-		user: userId, // El usuario al que pertenece el movimiento (de la data)
-	} = data;
+	const userId = data.user;
 
 	const newMovement = new movementModel(data);
 
@@ -50,14 +48,14 @@ exports.getMovementById = async function getMovementById(movementId, user, optio
 		if (!movement) {
 			throw new Error("El movimiento no existe.");
 		}
-
+		
 		const isAdmin = user.role.includes(USER_ROLES.ADMIN);
 		const isSameUser = movement.user._id === user._id;
-
+		
 		if (!isAdmin && !isSameUser) {
 			throw new Error("No tienes permiso para ver este movimiento.");
 		}
-
+	
 		return movement;
 	} catch (error) {
 		console.error("Error al obtener el movimiento:", error);
