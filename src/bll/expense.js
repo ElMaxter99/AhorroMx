@@ -1,6 +1,7 @@
 'use strict';
 
-const expenseModel = require('../models/expense');
+const expenseModel = require('../models/expense'); // BORRAR arreglar toda la bll
+const expenseRepository = require('../repository/expense');
 
 const groupBll = require('./group');
 
@@ -60,6 +61,21 @@ exports.getExpenseById = async function getExpenseById (expenseId, user, options
     throw new Error('Hubo un error al obtener el gasto.');
   }
 };
+
+async function getListByGroup (groupId, user, options = {}) {
+  try {
+    const group = await groupBll.getGroupById(groupId, user);
+    if (!group) {
+      throw new Error('Grupo no encontrado.');
+    }
+
+    const expenseList = await expenseRepository.getListByGroup(options);
+    return expenseList;
+  } catch (error) {
+    throw new Error('Error listing expenses: ' + error.message);
+  }
+}
+exports.getListByGroup = getListByGroup;
 
 exports.updateExpense = async function updateExpense (expenseId, newData, user) {
   const expense = await expenseModel.findById(expenseId).populate('group');

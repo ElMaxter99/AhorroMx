@@ -138,7 +138,23 @@ async function getExpenseList (options = {}) {
   }
 }
 
-async function deleteExpense(expenseId) {
+async function getListByGroup (groupId, options = {}) {
+  const { projection, population } = buildQueryProjectionAndPopulation(options);
+  try {
+    let queryBuilder = Expense.find({ group: groupId }, projection);
+
+    population.forEach(populateOption => {
+      queryBuilder = queryBuilder.populate(populateOption);
+    });
+
+    const expenses = await queryBuilder;
+    return expenses;
+  } catch (error) {
+    throw new Error('Error listing expenses: ' + error.message);
+  }
+}
+
+async function deleteExpense (expenseId) {
   try {
     const result = await Expense.deleteById(expenseId);
     if (!result) {
@@ -225,6 +241,7 @@ module.exports = {
   updateExpense,
   getExpense,
   getExpenseById,
+  getListByGroup
   getExpenseList,
   deleteExpense,
   getExpensesByGroup,

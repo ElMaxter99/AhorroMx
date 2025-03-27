@@ -43,7 +43,8 @@
       "semi": [
         2,
         "always"
-      ]
+      ],
+      "prefer-const": "off"
     }
   }
 }

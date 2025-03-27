@@ -2,7 +2,97 @@
 
 const Contribution = require('../models/contribution');
 
-async function createContribution (contributionData) {
+function parseQueryValue (value) {
+  if (typeof value === 'string' && value.includes(',')) {
+    return { $in: value.split(',').map(v => v.trim()) };
+  }
+  return value;
+}
+
+function getQueryFromOptions (options = {}) {
+  const query = {};
+  if (options.user) {
+    query.user = parseQueryValue(options.user);
+  }
+
+  if (options.expense) {
+    query.expense = parseQueryValue(options.expense);
+  }
+
+  if (options.status) {
+    query.status = parseQueryValue(options.status);
+  }
+
+  if (options.amount) {
+    query.amount = options.amount;
+  }
+
+  if (options.percentage) {
+    query.percentage = options.percentage;
+  }
+
+  if (options.startDate || options.endDate) {
+    query.date = {};
+    if (options.startDate) {
+      query.date.$gte = new Date(options.startDate);
+    }
+    if (options.endDate) {
+      query.date.$lte = new Date(options.endDate);
+    }
+  }
+
+  return query;
+}
+
+function getProjectionFromOptions (options = {}) {
+  let projection = {};
+  if (options.removeDate) {
+    projection.creationDate = 0;
+    projection.updateDate = 0;
+  }
+
+  if (options.removeExpense) {
+    projection.expense = 0;
+  }
+
+  if (options.removeUser) {
+    projection.user = 0;
+  }
+
+  return projection;
+}
+
+function getPopulationFromOptions (options = {}) {
+  const population = [];
+  if (options.populateExpense) {
+    population.push({ path: 'expense' });
+  }
+
+  if (options.populateUser) {
+    population.push({ path: 'user' });
+  }
+
+  if (options.populateGroup) {
+    population.push({
+      path: 'expense',
+      populate: {
+        path: 'group'
+      }
+    });
+  }
+
+  return population;
+}
+
+function buildQueryAndProjection (options = {}) {
+  const query = getQueryFromOptions(options) || {};
+  const projection = getProjectionFromOptions(options) || {};
+  const population = getPopulationFromOptions(options) || [];
+
+  return { query, projection, population };
+}
+
+async function create (contributionData) {
   try {
     const contribution = await Contribution.create(contributionData);
     return contribution;
@@ -26,15 +116,39 @@ async function updateContribution (contributionId, contributionData) {
   }
 }
 
-async function getContributionById (contributionId) {
+async function getContribution (options = {}) {
   try {
-    const contribution = await Contribution.findById(contributionId);
+    const { query, projection, population } = buildQueryAndProjection(options);
+    const contribution = await Contribution.findOne(query, projection).populate(population);
     if (!contribution) {
       throw new Error('Contribution not found');
     }
     return contribution;
   } catch (error) {
     throw new Error('Error fetching contribution: ' + error.message);
+  }
+}
+
+async function getById (contributionId, options = {}) {
+  try {
+    const { projection, population } = buildQueryAndProjection(options);
+    const contribution = await Contribution.findById(contributionId, projection).populate(population);
+    if (!contribution) {
+      throw new Error('Contribution not found');
+    }
+    return contribution;
+  } catch (error) {
+    throw new Error('Error fetching contribution: ' + error.message);
+  }
+}
+
+async function getList (options = {}) {
+  try {
+    const { query, projection, population } = buildQueryAndProjection(options);
+    const contributions = await Contribution.find(query, projection).populate(population);
+    return contributions;
+  } catch (error) {
+    throw new Error('Error listing contributions: ' + error.message);
   }
 }
 
@@ -50,40 +164,51 @@ async function deleteContribution (contributionId) {
   }
 }
 
-async function listContributions (filter = {}) {
+async function listContributions (options = {}) {
   try {
-    const contributions = await Contribution.find(filter);
+    const { query, projection, population } = buildQueryAndProjection(options);
+    const contributions = await Contribution.find(query, projection).populate(population);
     return contributions;
   } catch (error) {
     throw new Error('Error listing contributions: ' + error.message);
   }
 }
 
-async function listContributionsByExpense (expenseId) {
+async function getListByExpense (expenseId, options = {}) {
   try {
-    const contributions = await Contribution.find({ expense: expenseId });
+    const { projection, population } = buildQueryAndProjection(options);
+    const contributions = await Contribution.find({ expense: expenseId }, projection).populate(population);
     return contributions;
   } catch (error) {
     throw new Error('Error listing contributions: ' + error.message);
   }
 }
 
-async function listContributionsByUser (userId, options = {}) {
+async function getListByUser (userId, options = {}) {
   try {
-    const filter = { user: userId };
+    const { projection, population } = buildQueryAndProjection(options);
 
-    if (options.fromDate || options.toDate) {
-      filter.creationDate = {};
-      if (options.fromDate) {
-        filter.creationDate.$gte = options.fromDate;
-      }
+    const contributions = await Contribution.find({ user: userId }, projection).populate(population);
+    return contributions;
+  } catch (error) {
+    throw new Error('Error listing contributions: ' + error.message);
+  }
+}
 
-      if (options.toDate) {
-        filter.creationDate.$lte = options.toDate;
-      }
-    }
+async function getListByGroup (groupId, options = {}) {
+  try {
+    const { projection, population } = buildQueryAndProjection(options);
+    const contributions = await Contribution.find({ group: groupId }, projection).populate(population);
+    return contributions;
+  } catch (error) {
+    throw new Error('Error listing contributions: ' + error.message);
+  }
+}
 
-    const contributions = await Contribution.find(filter);
+async function getListByUserAndGroup (userId, groupId, options = {}) {
+  try {
+    const { projection, population } = buildQueryAndProjection(options);
+    const contributions = await Contribution.find({ user: userId, group: groupId }, projection).populate(population);
     return contributions;
   } catch (error) {
     throw new Error('Error listing contributions: ' + error.message);
@@ -91,11 +216,15 @@ async function listContributionsByUser (userId, options = {}) {
 }
 
 module.exports = {
-  createContribution,
-  updateContribution,
-  getContributionById,
-  deleteContribution,
+  create,
+  update: updateContribution,
+  get: getContribution,
+  getById,
+  getList,
+  delete: deleteContribution,
   listContributions,
-  listContributionsByExpense,
-  listContributionsByUser
+  getListByExpense,
+  getListByUser,
+  getListByGroup,
+  getListByUserAndGroup
 };

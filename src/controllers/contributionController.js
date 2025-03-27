@@ -1,7 +1,42 @@
 'use strict';
 
-const Contribution = require('../models/contribution');
-const Movement = require('../models/movement');
+const contributionBll = require('../bll/contribution');
+
+exports.createContribution = async (req, res) => {
+  try {
+    const contribution = await contributionBll.createContribution(req.body, req.user, req.query);
+    res.status(201).json({ message: 'Contribución creada correctamente', contribution });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al crear la contribución', error: error.message });
+  }
+};
+
+exports.getById = async (req, res) => {
+  try {
+    const contribution = await contributionBll.getById(req.params.contributionId, req.user, req.query);
+    res.status(200).json(contribution);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener la contribución', error: error.message });
+  }
+};
+
+exports.updateContribution = async (req, res) => {
+  try {
+    const contribution = await contributionBll.updateContribution(req.params.contributionId, req.body, req.user);
+    res.status(200).json({ message: 'Contribución actualizada correctamente', contribution });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar la contribución', error: error.message });
+  }
+};
+
+exports.deleteContribution = async (req, res) => {
+  try {
+    await contributionBll.deleteContribution(req.params.contributionId, req.user);
+    res.status(200).json({ message: 'Contribución eliminada correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar la contribución', error: error.message });
+  }
+};
 
 /**
  * Actualiza la contribución de un usuario en un gasto de grupo.

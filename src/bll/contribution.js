@@ -1,23 +1,22 @@
 'use strict';
 
-const contributionModel = require('../models/contribution');
-
+const contributionRepository = require('../repository/contribution');
 const groupBll = require('./group');
 const expenseBll = require('./expense');
 
 const { USER_ROLES } = require('../enums/user');
 
-function applyPopulateOptions (query, options) {
-  const { populateContributions } = options;
+// function applyPopulateOptions (query, options) {
+//   const { populateContributions } = options;
 
-  if (populateContributions === 'true') {
-    query = query.populate('contributions');
-  }
+//   if (populateContributions === 'true') {
+//     query = query.populate('contributions');
+//   }
 
-  return query;
-}
+//   return query;
+// }
 
-exports.createContribution = async function createContribution (data, user) {
+async function createContribution (data, user) {
   const expense = data.expense?._id ? data.expense : await expenseBll.getExpenseById(data.expense, user);
   if (!expense) {
     throw new Error('El gasto no existe.');
@@ -34,27 +33,27 @@ exports.createContribution = async function createContribution (data, user) {
     throw new Error('No eres miembro de este grupo.');
   }
 
-  const query = new contributionModel(data);
-  const savedContribution = await query.save();
+  const savedContribution = await contributionRepository.createContribution(data);
   return savedContribution;
 };
+exports.createContribution = createContribution;
 
-exports.getContributionById = async function getContributionById (contributionId, user, options) {
-  let query = contributionModel.findById(contributionId);
-  query = applyPopulateOptions(query, options);
+async function getById (contributionId, user, options) {
+  options.populateExpense = 'true';
+  options.populateGroup = 'true';
 
-  const contribution = await query;
+  const contribution = await contributionRepository.getById(contributionId, options);
   if (!contribution) {
     console.log('Contribución no encontrada.');
     return null;
   }
 
-  const expense = contribution.expense?._id ? contribution.expense : await expenseBll.getExpenseById(contribution.expense, user);
+  const expense = contribution.expense || null;
   if (!expense) {
     throw new Error('El gasto no existe.');
   }
 
-  const group = await groupBll.getGroupById(expense);
+  const group = expense.group || null;
   if (!group) {
     throw new Error('El grupo no existe.');
   }
@@ -67,154 +66,86 @@ exports.getContributionById = async function getContributionById (contributionId
 
   return contribution;
 };
+exports.getById = getById;
 
-exports.updateContribution = async function updateContribution (contributionId, data, user) {
-  const contribution = await contributionModel.findById(contributionId);
-  if (!contribution) {
-    throw new Error('Contribución no encontrada.');
-  }
-
-  const expense = contribution.expense?._id ? contribution.expense : await expenseBll.getExpenseById(contribution.expense, user);
-  if (!expense) {
-    throw new Error('El gasto no existe.');
-  }
-
-  const group = await groupBll.getGroupById(expense);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
+async function getList (options, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
+  if (!isAdmin) {
+    const userGroups = await groupBll.getGroupsByUser(user._id);
+    const groupIds = userGroups.map(group => group._id);
+    let expenses = [];
+    for (const groupId of groupIds) {
+      const groupExpenses = await expenseBll.getListByGroup(groupId, user);
+      expenses = expenses.concat(groupExpenses);
+    }
+    options.expense = expenses.join(',');
   }
 
-  Object.assign(contribution, data);
-  const updatedContribution = await contribution.save();
+  const contributions = await contributionRepository.getList(options);
+  return contributions;
+}
+exports.getList = getList;
+
+async function update (contributionId, newData, user) {
+  const contribution = await getById(contributionId, user);
+  const newContribution = { ...contribution, ...newData };
+  const updatedContribution = await contributionRepository.update(contributionId, newContribution);
   return updatedContribution;
 };
+exports.update = update;
 
-exports.deleteContribution = async function deleteContribution (contributionId, user) {
-  const contribution = await contributionModel.findById(contributionId);
+async function deleteContribution (contributionId, user) {
+  const contribution = await getById(contributionId, user);
   if (!contribution) {
     throw new Error('Contribución no encontrada.');
-  }
-
-  const expense = contribution.expense?._id ? contribution.expense : await expenseBll.getExpenseById(contribution.expense, user);
-  if (!expense) {
-    throw new Error('El gasto no existe.');
-  }
-
-  const group = await groupBll.getGroupById(expense);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
   }
 
   await contribution.remove();
 };
+exports.delete = deleteContribution;
 
-exports.getContributionsByExpense = async function getContributionsByExpense (expenseId, user, options) {
+async function getListByExpense (expenseId, user, options) {
   const expense = await expenseBll.getExpenseById(expenseId, user);
   if (!expense) {
     throw new Error('El gasto no existe.');
   }
 
-  const group = await groupBll.getGroupById(expense);
+  const contributions = await contributionRepository.getListByExpense(expenseId, options);
+  return contributions;
+};
+exports.getListByExpense = getListByExpense;
+
+exports.getContributionsByUser = async function getContributionsByUser (userId, user, options) {
+  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
+  if (userId !== user._id && !isAdmin) {
+    throw new Error('No tienes permiso para ver las contribuciones de otro usuario.');
+  }
+
+  const contributions = await contributionRepository.getListByUser(userId, options);
+  return contributions;
+};
+
+exports.getContributionsByGroup = async function getContributionsByGroup (groupId, user, options) {
+  const group = await groupBll.getGroupById(groupId, user);
   if (!group) {
     throw new Error('El grupo no existe.');
   }
 
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
-  }
-
-  const query = contributionModel.find({ expense: expenseId });
-  query = applyPopulateOptions(query, options);
-
-  const contributions = await query;
+  const contributions = await contributionRepository.getListByGroup(groupId, options);
   return contributions;
 };
 
-exports.getContributionsByUser = async function getContributionsByUser (userId, user, options) {
-  const query = contributionModel.find({ user: userId });
-  query = applyPopulateOptions(query, options);
+exports.getContributionsByUserAndGroup = async function getContributionsByUserAndGroup (userId, groupId, user, options) {
+  const group = await groupBll.getGroupById(groupId, user);
+  if (!group) {
+    throw new Error('El grupo no existe.');
+  }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   if (userId !== user._id && !isAdmin) {
     throw new Error('No tienes permiso para ver las contribuciones de otro usuario.');
   }
 
-  const contributions = await query;
-  return contributions;
-};
-
-exports.getContributionsByGroup = async function getContributionsByGroup (groupId, user, options) {
-  const group = await groupBll.getGroupById(groupId);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
-  }
-
-  const query = contributionModel.find({ group: groupId });
-  query = applyPopulateOptions(query, options);
-
-  const contributions = await query;
-  return contributions;
-};
-
-exports.getContributionsByUserAndGroup = async function getContributionsByUserAndGroup (userId, groupId, user, options) {
-  const group = await groupBll.getGroupById(groupId);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
-  }
-
-  const query = contributionModel.find({ user: userId, group: groupId });
-  query = applyPopulateOptions(query, options);
-
-  const contributions = await query;
-  return contributions;
-};
-
-exports.getContributionsByExpenseAndGroup = async function getContributionsByExpenseAndGroup (expenseId, groupId, user, options) {
-  const expense = await expenseBll.getExpenseById(expenseId, user);
-  if (!expense) {
-    throw new Error('El gasto no existe.');
-  }
-
-  const group = await groupBll.getGroupById(groupId);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = group.members.includes(user._id);
-  if (!isMember && !isAdmin) {
-    throw new Error('No eres miembro de este grupo.');
-  }
-
-  const query = contributionModel.find({ expense: expenseId, group: groupId });
-  query = applyPopulateOptions(query, options);
-
-  const contributions = await query;
+  const contributions = await contributionRepository.getListByUserAndGroup(userId, groupId, options);
   return contributions;
 };

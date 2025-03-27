@@ -8,7 +8,7 @@ const contributionSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true, min: 0 },
     percentage: { type: Number, required: true, min: 0, max: 100 },
-    status: { type: String, enum: Object.values(STATUS), default: STATUS.PENDING },
+    status: { type: String, enum: Object.values(STATUS), default: STATUS.PENDING }
   },
   { timestamps: true }
 );
