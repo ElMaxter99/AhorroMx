@@ -33,6 +33,17 @@
     "nodemailer": "^6.10.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "eslint": "^8.57.1",
+    "nodemon": "^3.1.9",
+    "standard": "17.1.2"
+  },
+  "eslintConfig": {
+    "extends": "standard",
+    "rules": {
+      "semi": [
+        2,
+        "always"
+      ]
+    }
   }
 }

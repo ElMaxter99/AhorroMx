@@ -1,4 +1,4 @@
-const movementModel = require("../models/movement");
+const movementModel = require('../models/movement');
 
 /**
  * Obtener todos los movimientos de un usuario
@@ -8,7 +8,7 @@ const getMovements = async (req, res) => {
     const movements = await movementModel.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(movements);
   } catch (error) {
-    res.status(500).json({ message: "Error obteniendo movimientos" });
+    res.status(500).json({ message: 'Error obteniendo movimientos' });
   }
 };
 
@@ -20,7 +20,7 @@ const createMovement = async (req, res) => {
     const { amount, type, description, category } = req.body;
 
     if (!amount || !type) {
-      return res.status(400).json({ message: "Monto y tipo son requeridos" });
+      return res.status(400).json({ message: 'Monto y tipo son requeridos' });
     }
 
     const movement = new movementModel({
@@ -28,13 +28,13 @@ const createMovement = async (req, res) => {
       type,
       description,
       category,
-      user: req.user.id,
+      user: req.user.id
     });
 
     await movement.save();
     res.status(201).json(movement);
   } catch (error) {
-    res.status(500).json({ message: "Error creando movimiento" });
+    res.status(500).json({ message: 'Error creando movimiento' });
   }
 };
 
@@ -47,7 +47,7 @@ const updateMovement = async (req, res) => {
     const movement = await movementModel.findById(id);
 
     if (!movement || movement.user.toString() !== req.user.id) {
-      return res.status(404).json({ message: "Movimiento no encontrado" });
+      return res.status(404).json({ message: 'Movimiento no encontrado' });
     }
 
     Object.assign(movement, req.body);
@@ -55,7 +55,7 @@ const updateMovement = async (req, res) => {
 
     res.json(movement);
   } catch (error) {
-    res.status(500).json({ message: "Error actualizando movimiento" });
+    res.status(500).json({ message: 'Error actualizando movimiento' });
   }
 };
 
@@ -68,13 +68,13 @@ const deleteMovement = async (req, res) => {
     const movement = await movementModel.findById(id);
 
     if (!movement || movement.user.toString() !== req.user.id) {
-      return res.status(404).json({ message: "Movimiento no encontrado" });
+      return res.status(404).json({ message: 'Movimiento no encontrado' });
     }
 
     await movement.deleteOne();
-    res.json({ message: "Movimiento eliminado" });
+    res.json({ message: 'Movimiento eliminado' });
   } catch (error) {
-    res.status(500).json({ message: "Error eliminando movimiento" });
+    res.status(500).json({ message: 'Error eliminando movimiento' });
   }
 };
 
@@ -82,5 +82,5 @@ module.exports = {
   getMovements,
   createMovement,
   updateMovement,
-  deleteMovement,
+  deleteMovement
 };

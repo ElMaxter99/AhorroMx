@@ -8,7 +8,7 @@ const expenseSchema = new mongoose.Schema(
     paidBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
-    contributions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contribution', default: [] }],
+    contributions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contribution', default: [] }]
   },
   { timestamps: true }
 );

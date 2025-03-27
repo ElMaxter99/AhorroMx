@@ -7,28 +7,28 @@ const groupInvitationSchema = new mongoose.Schema(
     group: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
-      required: true,
+      required: true
     },
     invitedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: true
     },
     invitedUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: true
     },
     status: {
       type: String,
       enum: Object.values(STATUS),
-      default: STATUS.DRAFT,
+      default: STATUS.DRAFT
     },
     createdAt: {
       type: Date,
-      default: Date.now,
-    },
-  },
+      default: Date.now
+    }
+  }
 );
 
 module.exports = mongoose.model('GroupInvitation', groupInvitationSchema);

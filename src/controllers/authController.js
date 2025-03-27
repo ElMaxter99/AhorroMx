@@ -1,15 +1,15 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { validationResult } = require("express-validator");
-const User = require("../models/user");
-const config = require("../../config");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
+const User = require('../models/user');
+const config = require('../../config');
 
 // 📌 Genera un token JWT
 const generateToken = (user) => {
   return jwt.sign(
     { userId: user._id, role: user.role },
     config.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: '7d' }
   );
 };
 
@@ -25,7 +25,7 @@ exports.register = async (req, res) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({ message: "El correo ya está en uso." });
+      return res.status(400).json({ message: 'El correo ya está en uso.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,9 +34,9 @@ exports.register = async (req, res) => {
     await newUser.save();
 
     const token = generateToken(newUser);
-    res.status(201).json({ message: "Usuario registrado.", token });
+    res.status(201).json({ message: 'Usuario registrado.', token });
   } catch (error) {
-    res.status(500).json({ message: "Error en el registro.", error });
+    res.status(500).json({ message: 'Error en el registro.', error });
   }
 };
 
@@ -52,19 +52,19 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Credenciales incorrectas." });
+      return res.status(401).json({ message: 'Credenciales incorrectas.' });
     }
 
     const token = generateToken(user);
-    res.json({ message: "Inicio de sesión exitoso.", token });
+    res.json({ message: 'Inicio de sesión exitoso.', token });
   } catch (error) {
-    res.status(500).json({ message: "Error en el inicio de sesión.", error });
+    res.status(500).json({ message: 'Error en el inicio de sesión.', error });
   }
 };
 
 // 📌 Cierre de sesión (Frontend elimina el token)
 exports.logout = (req, res) => {
-  res.json({ message: "Sesión cerrada correctamente." });
+  res.json({ message: 'Sesión cerrada correctamente.' });
 };
 
 // 📌 Renovación de token
@@ -76,16 +76,16 @@ exports.refreshToken = (req, res) => {
     const newToken = generateToken({ _id: decoded.userId, role: decoded.role });
     res.json({ token: newToken });
   } catch (error) {
-    res.status(401).json({ message: "Token inválido o expirado." });
+    res.status(401).json({ message: 'Token inválido o expirado.' });
   }
 };
 
 // 📌 Recuperación de contraseña (Pendiente de implementación con email)
 exports.forgotPassword = async (req, res) => {
-  res.json({ message: "Funcionalidad en desarrollo." });
+  res.json({ message: 'Funcionalidad en desarrollo.' });
 };
 
 // 📌 Resetear contraseña
 exports.resetPassword = async (req, res) => {
-  res.json({ message: "Funcionalidad en desarrollo." });
+  res.json({ message: 'Funcionalidad en desarrollo.' });
 };

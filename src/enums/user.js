@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
 const ROLES = {
-    ADMIN: 'ADMIN',
-    USER: 'USER',
+  ADMIN: 'ADMIN',
+  USER: 'USER'
 };
 
 module.exports = {
-    ROLES: ROLES,
+  ROLES: ROLES
 };

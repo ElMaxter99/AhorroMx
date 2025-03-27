@@ -1,5 +1,5 @@
-const Contribution = require("../models/contribution");
-const Expense = require("../models/expense");
+const Contribution = require('../models/contribution');
+const Expense = require('../models/expense');
 
 // Crear una nueva contribución
 exports.createContribution = async (req, res) => {
@@ -9,7 +9,7 @@ exports.createContribution = async (req, res) => {
     // Verificar que el gasto existe
     const expense = await Expense.findById(expenseId);
     if (!expense) {
-      return res.status(404).json({ error: "El gasto no existe." });
+      return res.status(404).json({ error: 'El gasto no existe.' });
     }
 
     // Crear la contribución
@@ -22,7 +22,7 @@ exports.createContribution = async (req, res) => {
 
     res.status(201).json(contribution);
   } catch (error) {
-    res.status(500).json({ error: "Error al crear la contribución.", details: error.message });
+    res.status(500).json({ error: 'Error al crear la contribución.', details: error.message });
   }
 };
 
@@ -32,9 +32,9 @@ exports.getContributions = async (req, res) => {
     const { groupId } = req.params;
 
     // Buscar todos los gastos del grupo
-    const expenses = await Expense.find({ groupId }).populate("contributions");
+    const expenses = await Expense.find({ groupId }).populate('contributions');
     if (!expenses.length) {
-      return res.status(404).json({ error: "No hay contribuciones en este grupo." });
+      return res.status(404).json({ error: 'No hay contribuciones en este grupo.' });
     }
 
     // Extraer todas las contribuciones
@@ -42,7 +42,7 @@ exports.getContributions = async (req, res) => {
 
     res.json(contributions);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener las contribuciones.", details: error.message });
+    res.status(500).json({ error: 'Error al obtener las contribuciones.', details: error.message });
   }
 };
 
@@ -60,12 +60,12 @@ exports.updateContribution = async (req, res) => {
     );
 
     if (!contribution) {
-      return res.status(404).json({ error: "Contribución no encontrada." });
+      return res.status(404).json({ error: 'Contribución no encontrada.' });
     }
 
     res.json(contribution);
   } catch (error) {
-    res.status(500).json({ error: "Error al actualizar la contribución.", details: error.message });
+    res.status(500).json({ error: 'Error al actualizar la contribución.', details: error.message });
   }
 };
 
@@ -77,16 +77,16 @@ exports.deleteContribution = async (req, res) => {
     // Buscar y eliminar la contribución
     const contribution = await Contribution.findByIdAndDelete(contributionId);
     if (!contribution) {
-      return res.status(404).json({ error: "Contribución no encontrada." });
+      return res.status(404).json({ error: 'Contribución no encontrada.' });
     }
 
     // Remover la contribución del gasto asociado
     await Expense.findByIdAndUpdate(contribution.expenseId, {
-      $pull: { contributions: contributionId },
+      $pull: { contributions: contributionId }
     });
 
-    res.json({ message: "Contribución eliminada correctamente." });
+    res.json({ message: 'Contribución eliminada correctamente.' });
   } catch (error) {
-    res.status(500).json({ error: "Error al eliminar la contribución.", details: error.message });
+    res.status(500).json({ error: 'Error al eliminar la contribución.', details: error.message });
   }
 };

@@ -1,6 +1,6 @@
 const express = require('express');
 const groupController = require('../controllers/groupController');
-const {authMiddleware, checkRole} = require('../middlewares/authMiddleware');
+const { authMiddleware, checkRole } = require('../middlewares/authMiddleware');
 
 const { ROLES } = require('../enums/user');
 
@@ -18,6 +18,6 @@ router.post('/:groupId/make-admin/:userId', authMiddleware, groupController.setA
 router.post('/:groupId/remove-admin/:userId', authMiddleware, groupController.removeAdmin);
 router.post('/:groupId/transfer-ownership/:userId', authMiddleware, groupController.transferGroupOwnership);
 
-router.get("/:groupId/simplified-debts", authMiddleware, groupController.getSimplifiedDebts);
+router.get('/:groupId/simplified-debts', authMiddleware, groupController.getSimplifiedDebts);
 
 module.exports = router;

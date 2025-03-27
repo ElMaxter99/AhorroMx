@@ -1,16 +1,16 @@
-const Expense = require("../models/expense");
-const Contribution = require("../models/contribution");
+const Expense = require('../models/expense');
+const Contribution = require('../models/contribution');
 
 /**
  * Calcula los balances de cada usuario en un grupo
- * @param {String} groupId 
+ * @param {String} groupId
  * @returns {Object} { userId: balance }
  */
 const calculateDebts = async (groupId) => {
   const balances = {};
 
-  const expenses = await Expense.find({ group: groupId }).populate("payer");
-  
+  const expenses = await Expense.find({ group: groupId }).populate('payer');
+
   for (const expense of expenses) {
     const payerId = expense.payer._id.toString();
     if (!balances[payerId]) balances[payerId] = 0;
@@ -30,14 +30,14 @@ const calculateDebts = async (groupId) => {
 
 /**
  * Simplifica las deudas dentro de un grupo para minimizar transacciones
- * @param {String} groupId 
+ * @param {String} groupId
  * @returns {Array} Lista de pagos optimizados [{ from, to, amount }]
  */
 const simplifyDebts = async (groupId) => {
   const balances = await calculateDebts(groupId);
 
-  let creditors = [];
-  let debtors = [];
+  const creditors = [];
+  const debtors = [];
 
   // Separar acreedores (+) y deudores (-)
   for (const userId in balances) {
@@ -48,18 +48,18 @@ const simplifyDebts = async (groupId) => {
     }
   }
 
-  let transactions = [];
+  const transactions = [];
 
   while (debtors.length > 0 && creditors.length > 0) {
-    let debtor = debtors[0];
-    let creditor = creditors[0];
+    const debtor = debtors[0];
+    const creditor = creditors[0];
 
-    let amount = Math.min(debtor.amount, creditor.amount);
+    const amount = Math.min(debtor.amount, creditor.amount);
 
     transactions.push({
       from: debtor.user,
       to: creditor.user,
-      amount,
+      amount
     });
 
     debtor.amount -= amount;
@@ -78,6 +78,6 @@ const simplifyDebts = async (groupId) => {
 };
 
 module.exports = {
-    calculateDebts,
-    simplifyDebts,
+  calculateDebts,
+  simplifyDebts
 };

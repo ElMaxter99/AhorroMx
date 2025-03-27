@@ -4,7 +4,7 @@ const { STATUS } = require('../enums/contribution');
 
 const contributionSchema = new mongoose.Schema(
   {
-    expenseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Expense', required: true },
+    expense: { type: mongoose.Schema.Types.ObjectId, ref: 'Expense', required: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true, min: 0 },
     percentage: { type: Number, required: true, min: 0, max: 100 },
@@ -14,4 +14,3 @@ const contributionSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Contribution', contributionSchema);
-

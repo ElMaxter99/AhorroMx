@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
   port: config.EMAIL.PORT,
   auth: {
     user: config.EMAIL.USER,
-    pass: config.EMAIL.PASS,
-  },
+    pass: config.EMAIL.PASS
+  }
 });
 
 /**
@@ -51,7 +51,7 @@ const sendEmail = async (to, subject, template, data = {}) => {
 
     const templatePath = path.join(
       __dirname,
-      `../templates/${template.templateType}/${template.templateName}.html`
+      `../templates/email/${template.templateType}/${template.templateName}.html`
     );
 
     if (!fs.existsSync(templatePath)) {
@@ -66,7 +66,7 @@ const sendEmail = async (to, subject, template, data = {}) => {
       from: `'SplitFlow' <${config.EMAIL.USER}>`,
       to,
       subject,
-      html: emailTemplate,
+      html: emailTemplate
     };
 
     await transporter.sendMail(mailOptions);

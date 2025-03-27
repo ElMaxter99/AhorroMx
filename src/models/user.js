@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const { ROLES } = require('../enums/user');
 const userSchema = new mongoose.Schema({
@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: [3, 'El nombre debe tener al menos 3 caracteres'],
-    maxlength: [50, 'El nombre no puede tener más de 50 caracteres'],
+    maxlength: [50, 'El nombre no puede tener más de 50 caracteres']
   },
   email: {
     type: String,
@@ -21,68 +21,69 @@ const userSchema = new mongoose.Schema({
       validator: function (val) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
       },
-      message: "Por favor, ingresa un correo electrónico válido",
+      message: 'Por favor, ingresa un correo electrónico válido'
+    }
+  },
+  credentials: {
+    password: {
+      type: String,
+      required: true,
+      minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
+      select: false
     },
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
-    select: false,
-  },
-  passwordHistory: {
-    type: [String],
-    select: false,
+    passwordHistory: {
+      type: [String],
+      select: false
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date
   },
   role: {
     type: [String],
     enum: Object.values(ROLES),
-    default: [ROLES.USER],
+    default: [ROLES.USER]
   },
   profileInfo: {
     photoUrl: {
       type: String,
-      default: '',
+      default: ''
     },
-    backgroundUrl: { 
+    backgroundUrl: {
       type: String, default: ''
     },
     firstName: {
       type: String,
-      default: '',
+      default: ''
     },
     lastName: {
       type: String,
-      default: '',
+      default: ''
     },
     birthDate: {
       type: Date,
-      default: null,
-    },
+      default: null
+    }
   },
-
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
   active: {
     type: Boolean,
     default: true,
-    select: false,
+    select: false
   },
   createdAt: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.credentials.password = await bcrypt.hash(this.credentials.password, 10);
 
-  if (this.passwordHistory) {
-    this.passwordHistory.push(this.password);
+  if (this.credentials.passwordHistory) {
+    this.credentials.passwordHistory.push(this.credentials.password);
   } else {
-    this.passwordHistory = [this.password];
+    this.credentials.passwordHistory = [this.credentials.password];
   }
 
   next();
@@ -91,7 +92,7 @@ userSchema.pre("save", async function (next) {
 userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
 
-  this.passwordChangedAt = Date.now() - 1000;
+  this.credentials.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
@@ -105,9 +106,9 @@ userSchema.methods.comparePassword = async function (password) {
 };
 
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
+  if (this.credentials.passwordChangedAt) {
     const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
+      this.credentials.passwordChangedAt.getTime() / 1000,
       10
     );
 
@@ -117,15 +118,15 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 };
 
 userSchema.methods.createPasswordResetToken = function () {
-  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetToken = crypto.randomBytes(32).toString('hex');
 
-  this.passwordResetToken = crypto
-    .createHash("sha256")
+  this.credentials.passwordResetToken = crypto
+    .createHash('sha256')
     .update(resetToken)
-    .digest("hex");
+    .digest('hex');
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.credentials.passwordResetExpires = Date.now() + 10 * 60 * 1000;
   return resetToken;
 };
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model('User', userSchema);
