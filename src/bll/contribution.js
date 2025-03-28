@@ -5,6 +5,7 @@ const groupBll = require('./group');
 const expenseBll = require('./expense');
 
 const { USER_ROLES } = require('../enums/user');
+const { STATUS } = require('../enums/contribution');
 
 // function applyPopulateOptions (query, options) {
 //   const { populateContributions } = options;
@@ -38,7 +39,7 @@ async function createContribution (data, user) {
 };
 exports.createContribution = createContribution;
 
-async function getById (contributionId, user, options) {
+async function getById (contributionId, user, options = {}) {
   options.populateExpense = 'true';
   options.populateGroup = 'true';
 
@@ -68,20 +69,44 @@ async function getById (contributionId, user, options) {
 };
 exports.getById = getById;
 
-async function getList (options, user) {
+async function getList (options = {}, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   if (!isAdmin) {
-    const userGroups = await groupBll.getGroupsByUser(user._id);
-    const groupIds = userGroups.map(group => group._id);
-    let expenses = [];
+    const userGroups = await groupBll.getGroupsByUser(user._id, user);
+    const groupIds = userGroups.map(group => group._id) || [];
+    let expenseList = [];
     for (const groupId of groupIds) {
-      const groupExpenses = await expenseBll.getListByGroup(groupId, user);
-      expenses = expenses.concat(groupExpenses);
+      const expensesFromGroup = await expenseBll.getListByGroup(groupId, user);
+      expenseList = expenseList.concat(expensesFromGroup);
     }
-    options.expense = expenses.join(',');
+
+    if (options.group) {
+      const requestedGroups = options.group.split(',');
+      options.group = requestedGroups.filter(groupId => groupIds.includes(groupId)).join(',');
+    }
+
+    options.group = options.group || groupIds.join(',');
+    if (options.expense) {
+      const requestedExpenses = options.expense.split(',');
+      const expenseIds = expenseList.map(expense => expense._id);
+      options.expense = requestedExpenses.filter(expenseId => expenseIds.includes(expenseId)).join(',');
+    }
+
+    options.expense = options.expense || expenseList.map(expense => expense._id).join(',');
+    if (options.status) {
+      const requestedStatuses = options.status.split(',');
+      options.status = requestedStatuses.filter(status => STATUS.includes(status)).join(',');
+    }
+
+    options.status = options.status || STATUS.join(',');
+    if (options.creationDate) {
+      const creationDate = new Date(options.creationDate);
+      options.startDate = new Date(creationDate.setHours(0, 0, 0, 0));
+      options.endDate = new Date(creationDate.setHours(23, 59, 59, 999));
+    }
   }
 
-  const contributions = await contributionRepository.getList(options);
+  const contributions = await contributionRepository.getList(options) || [];
   return contributions;
 }
 exports.getList = getList;
@@ -94,6 +119,21 @@ async function update (contributionId, newData, user) {
 };
 exports.update = update;
 
+async function updateStatus (contributionId, status, user) {
+  const contribution = await getById(contributionId, user);
+  if (!contribution) {
+    throw new Error('Contribución no encontrada.');
+  }
+
+  if (!STATUS.includes(status)) {
+    throw new Error('Estado inválido.');
+  }
+
+  const updatedContribution = await contributionRepository.updateStatus(contributionId, status);
+  return updatedContribution;
+}
+exports.updateStatus = updateStatus;
+
 async function deleteContribution (contributionId, user) {
   const contribution = await getById(contributionId, user);
   if (!contribution) {
@@ -104,48 +144,43 @@ async function deleteContribution (contributionId, user) {
 };
 exports.delete = deleteContribution;
 
-async function getListByExpense (expenseId, user, options) {
-  const expense = await expenseBll.getExpenseById(expenseId, user);
-  if (!expense) {
-    throw new Error('El gasto no existe.');
-  }
+async function getListByExpense (expenseId, user, options = {}) {
+  options.expense = expenseId;
+  const contributions = await getList(options, user);
 
-  const contributions = await contributionRepository.getListByExpense(expenseId, options);
   return contributions;
 };
 exports.getListByExpense = getListByExpense;
 
-exports.getContributionsByUser = async function getContributionsByUser (userId, user, options) {
+async function getListByUser (userId, user, options = {}) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   if (userId !== user._id && !isAdmin) {
     throw new Error('No tienes permiso para ver las contribuciones de otro usuario.');
   }
 
-  const contributions = await contributionRepository.getListByUser(userId, options);
+  options.user = userId;
+  const contributions = await getList(options, user);
   return contributions;
 };
+exports.getListByUser = getListByUser;
 
-exports.getContributionsByGroup = async function getContributionsByGroup (groupId, user, options) {
-  const group = await groupBll.getGroupById(groupId, user);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
+async function getListByGroup (groupId, user, options) {
+  options.group = groupId;
 
-  const contributions = await contributionRepository.getListByGroup(groupId, options);
+  const contributions = await getList(options, user);
   return contributions;
 };
+exports.getListByGroup = getListByGroup;
 
-exports.getContributionsByUserAndGroup = async function getContributionsByUserAndGroup (userId, groupId, user, options) {
-  const group = await groupBll.getGroupById(groupId, user);
-  if (!group) {
-    throw new Error('El grupo no existe.');
-  }
-
+async function getListByUserAndGroup (userId, groupId, user, options) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   if (userId !== user._id && !isAdmin) {
     throw new Error('No tienes permiso para ver las contribuciones de otro usuario.');
   }
 
-  const contributions = await contributionRepository.getListByUserAndGroup(userId, groupId, options);
+  options.user = userId;
+  options.group = groupId;
+  const contributions = await getList(options, user);
   return contributions;
 };
+exports.getListByUserAndGroup = getListByUserAndGroup;

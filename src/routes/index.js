@@ -1,12 +1,12 @@
 const express = require('express');
 
-const authRoutes = require('./authRoutes');
-const userRoutes = require('./userRoutes');
-const groupRoutes = require('./groupRoutes');
-const groupInvitationRoutes = require('./groupInvitationRoutes');
-const expenseRoutes = require('./expenseRoutes');
-const contributionRoutes = require('./contributionRoutes');
-const movementRoutes = require('./movementRoutes');
+const authRoutes = require('./auth');
+const userRoutes = require('./user');
+const groupRoutes = require('./group');
+const groupInvitationRoutes = require('./groupInvitation');
+const expenseRoutes = require('./expense');
+const contributionRoutes = require('./contribution');
+const movementRoutes = require('./movement');
 
 const router = express.Router();
 

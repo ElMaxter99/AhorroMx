@@ -116,6 +116,23 @@ async function updateContribution (contributionId, contributionData) {
   }
 }
 
+async function updateStatus (contributionId, status) {
+  try {
+    if (!contributionId || !status) {
+      throw new Error('Invalid input: contributionId and status are required');
+    }
+
+    const contribution = await Contribution.findByIdAndUpdate(contributionId, { status }, { new: true });
+    if (!contribution) {
+      throw new Error('Contribution not found or no changes made');
+    }
+
+    return contribution;
+  } catch (error) {
+    throw new Error('Error updating contribution status: ' + error.message);
+  }
+}
+
 async function getContribution (options = {}) {
   try {
     const { query, projection, population } = buildQueryAndProjection(options);
@@ -174,15 +191,15 @@ async function listContributions (options = {}) {
   }
 }
 
-async function getListByExpense (expenseId, options = {}) {
-  try {
-    const { projection, population } = buildQueryAndProjection(options);
-    const contributions = await Contribution.find({ expense: expenseId }, projection).populate(population);
-    return contributions;
-  } catch (error) {
-    throw new Error('Error listing contributions: ' + error.message);
-  }
-}
+// async function getListByExpense (expenseId, options = {}) {
+//   try {
+//     const { projection, population } = buildQueryAndProjection(options);
+//     const contributions = await Contribution.find({ expense: expenseId }, projection).populate(population);
+//     return contributions;
+//   } catch (error) {
+//     throw new Error('Error listing contributions: ' + error.message);
+//   }
+// }
 
 async function getListByUser (userId, options = {}) {
   try {
@@ -218,12 +235,13 @@ async function getListByUserAndGroup (userId, groupId, options = {}) {
 module.exports = {
   create,
   update: updateContribution,
+  updateStatus,
   get: getContribution,
   getById,
   getList,
   delete: deleteContribution,
   listContributions,
-  getListByExpense,
+  // getListByExpense,
   getListByUser,
   getListByGroup,
   getListByUserAndGroup

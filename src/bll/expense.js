@@ -37,7 +37,7 @@ exports.createExpense = async function createExpense (data, user) {
   }
 };
 
-exports.getExpenseById = async function getExpenseById (expenseId, user, options = {}) {
+async function getById (expenseId, user, options = {}) {
   let query = expenseModel.findById(expenseId);
   query = applyPopulateOptions(query, options);
   query.populate('group');
@@ -61,6 +61,7 @@ exports.getExpenseById = async function getExpenseById (expenseId, user, options
     throw new Error('Hubo un error al obtener el gasto.');
   }
 };
+exports.getById = getById;
 
 async function getListByGroup (groupId, user, options = {}) {
   try {

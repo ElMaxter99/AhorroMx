@@ -1,7 +1,7 @@
 'use strict';
 
-const groupBll = require('../bll/group');
-const { simplifyDebts } = require('../services/debtService');
+const groupBll = require('../bll/group.js');
+const { simplifyDebts } = require('../services/debtService.js');
 
 const { ROLES } = require('../enums/user.js');
 
