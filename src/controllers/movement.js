@@ -20,6 +20,15 @@ exports.getById = async (req, res) => {
   }
 };
 
+exports.getList = async (req, res) => {
+  try {
+    const movements = await movementBll.getList(req.user, req.query);
+    res.status(200).json(movements);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener la lista de movimientos', error: error.message });
+  }
+};
+
 exports.delete = async (req, res) => {
   try {
     await movementBll.delete(req.params.movementId, req.user);
@@ -53,15 +62,6 @@ exports.updateType = async (req, res) => {
     res.status(200).json({ message: 'Tipo del movimiento actualizado correctamente', movement });
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar el tipo del movimiento', error: error.message });
-  }
-};
-
-exports.getList = async (req, res) => {
-  try {
-    const movements = await movementBll.getList(req.user, req.query);
-    res.status(200).json(movements);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener la lista de movimientos', error: error.message });
   }
 };
 

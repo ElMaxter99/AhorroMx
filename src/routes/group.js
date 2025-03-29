@@ -1,5 +1,5 @@
 const express = require('express');
-const groupController = require('../controllers/groupController');
+const groupController = require('../controllers/group');
 const { authMiddleware, checkRole } = require('../middlewares/authMiddleware');
 
 const { ROLES } = require('../enums/user');

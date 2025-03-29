@@ -241,7 +241,7 @@ module.exports = {
   updateExpense,
   getExpense,
   getExpenseById,
-  getListByGroup
+  getListByGroup,
   getExpenseList,
   deleteExpense,
   getExpensesByGroup,

@@ -1,8 +1,8 @@
 const express = require('express');
+const router = express.Router();
+
 const movementController = require('../controllers/movement');
 // const authMiddleware = require('../middlewares/authMiddleware'); // TODO
-
-const router = express.Router();
 
 router.post('/', movementController.create);
 
