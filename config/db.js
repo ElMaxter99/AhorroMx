@@ -4,8 +4,6 @@ const config = require('../config');
 const connectDB = async () => {
   try {
     await mongoose.connect(config.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000
     });
 

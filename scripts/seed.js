@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 const User = require('../src/models/user');
 const Category = require('../src/models/category');
 const Group = require('../src/models/group');
-require('dotenv').config();
+
+const config = require('../config');
 
 const args = process.argv.slice(2);
 const noClean = args.includes('--no-clean');
@@ -13,9 +14,12 @@ const categoriesOnly = args.includes('--categories-only');
 
 const seedDatabase = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+    if (!config.MONGO_URI) {
+      throw new Error('❌ MONGO_URI is not defined in the environment variables');
+    }
+
+    await mongoose.connect(config.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000
     });
     console.log('📡 Conectado a MongoDB');
 
@@ -37,28 +41,28 @@ const seedDatabase = async () => {
     if (!groupsOnly && !categoriesOnly) {
       // Crear usuarios
       admin = await User.create({
-        username: process.env.SEED_SCRIPT_ADMIN_USERNAME,
-        email: process.env.SEED_SCRIPT_ADMIN_EMAIL,
+        username: config.SEED.ADMIN.USERNAME,
+        email: config.SEED.ADMIN.EMAIL,
         credentials: {
-          password: process.env.SEED_SCRIPT_ADMIN_PASSWORD
+          password: config.SEED.ADMIN.PASSWORD
         },
         role: ['ADMIN']
       });
 
       user = await User.create({
-        username: process.env.SEED_SCRIPT_USER_USERNAME,
-        email: process.env.SEED_SCRIPT_USER_EMAIL,
+        username: config.SEED.USER.EMAIL,
+        email: config.SEED.USER.EMAIL,
         credentials: {
-          password: process.env.SEED_SCRIPT_USER_PASSWORD
+          password: config.SEED.USER.PASSWORD
         },
         role: ['USER']
       });
 
       userAdmin = await User.create({
-        username: process.env.SEED_SCRIPT_USERADMIN_USERNAME,
-        email: process.env.SEED_SCRIPT_USERADMIN_EMAIL,
+        username: config.SEED.USERADMIN.USERNAME,
+        email: config.SEED.USERADMIN.EMAIL,
         credentials: {
-          password: process.env.SEED_SCRIPT_USERADMIN_PASSWORD
+          password: config.SEED.USERADMIN.PASSWORD
         },
         role: ['ADMIN', 'USER']
       });
@@ -91,7 +95,8 @@ const seedDatabase = async () => {
         { name: 'Ropa', description: 'Ropa, calzado y accesorios', imgEmojiIcon: '/public/icons/1f455.svg' },
         { name: 'Tecnología', description: 'Gadgets, móviles, ordenadores', imgEmojiIcon: '/public/icons/1f4bb.svg' },
         { name: 'Viajes', description: 'Vacaciones, hoteles, vuelos', imgEmojiIcon: '/public/icons/2708.svg' },
-        { name: 'Otros', description: 'Gastos varios', imgEmojiIcon: '/public/icons/1f516.svg' }
+        { name: 'Otros', description: 'Gastos varios', imgEmojiIcon: '/public/icons/1f516.svg' },
+        { name: 'Sin categorizar' }
       ];
 
       await Category.insertMany(
