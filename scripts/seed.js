@@ -73,7 +73,7 @@ const seedDatabase = async () => {
         description: 'Este es un grupo de prueba',
         owner: userAdmin._id,
         admins: [userAdmin._id],
-        members: [user._id, userAdmin._id],
+        members: [user._id, userAdmin._id]
       });
 
       console.log('✅ Grupo creado');
@@ -82,16 +82,16 @@ const seedDatabase = async () => {
     if (!usersOnly && !groupsOnly) {
       // Categorías predefinidas
       const categories = [
-        { name: 'Alimentación', description: 'Gastos en comida y supermercados', emojiIcon: '🍽' },
-        { name: 'Transporte', description: 'Gastos en gasolina, autobús, metro', emojiIcon: '🚌' },
-        { name: 'Ocio', description: 'Cines, bares, entretenimiento', emojiIcon: '🎬' },
-        { name: 'Salud', description: 'Consultas médicas, medicamentos', emojiIcon: '💊' },
-        { name: 'Educación', description: 'Libros, cursos, formación', emojiIcon: '📚' },
-        { name: 'Hogar', description: 'Alquiler, hipoteca, mantenimiento', emojiIcon: '🏠' },
-        { name: 'Ropa', description: 'Ropa, calzado y accesorios', emojiIcon: '👕' },
-        { name: 'Tecnología', description: 'Gadgets, móviles, ordenadores', emojiIcon: '💻' },
-        { name: 'Viajes', description: 'Vacaciones, hoteles, vuelos', emojiIcon: '✈️' },
-        { name: 'Otros', description: 'Gastos varios', emojiIcon: '🔖' }
+        { name: 'Alimentación', description: 'Gastos en comida y supermercados', imgEmojiIcon: '/public/icons/1f37d.svg' },
+        { name: 'Transporte', description: 'Gastos en gasolina, autobús, metro', imgEmojiIcon: '/public/icons/1f68c.svg' },
+        { name: 'Ocio', description: 'Cines, bares, entretenimiento', imgEmojiIcon: '/public/icons/1f3ac.svg' },
+        { name: 'Salud', description: 'Consultas médicas, medicamentos', imgEmojiIcon: '/public/icons/1f48a.svg' },
+        { name: 'Educación', description: 'Libros, cursos, formación', imgEmojiIcon: '/public/icons/1f4da.svg' },
+        { name: 'Hogar', description: 'Alquiler, hipoteca, mantenimiento', imgEmojiIcon: '/public/icons/1f3e0.svg' },
+        { name: 'Ropa', description: 'Ropa, calzado y accesorios', imgEmojiIcon: '/public/icons/1f455.svg' },
+        { name: 'Tecnología', description: 'Gadgets, móviles, ordenadores', imgEmojiIcon: '/public/icons/1f4bb.svg' },
+        { name: 'Viajes', description: 'Vacaciones, hoteles, vuelos', imgEmojiIcon: '/public/icons/2708.svg' },
+        { name: 'Otros', description: 'Gastos varios', imgEmojiIcon: '/public/icons/1f516.svg' }
       ];
 
       await Category.insertMany(
