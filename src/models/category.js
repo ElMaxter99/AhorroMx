@@ -10,29 +10,20 @@ const categorySchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
+    default: '',
     trim: true,
-    minlength: [10, 'La descripción debe tener al menos 10 caracteres'],
     maxlength: [200, 'La descripción no puede tener más de 200 caracteres']
   },
-  emojiIcon: {
+  imgEmojiIcon: {
     type: String,
-    default: '',
+    default: '/public/icons/2754.svg', // Default '❔' icon
+    validate: {
+      validator: function (v) {
+        return /^(\/public\/icons\/[a-zA-Z0-9-_]+\.[a-zA-Z0-9]+)$/.test(v);
+      },
+      message: props => `${props.value} no es una URL válida para un icono.`
+    },
     trim: true
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  group: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Group',
-    required: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   },
   active: {
     type: Boolean,
@@ -58,7 +49,7 @@ const categorySchema = new mongoose.Schema({
       }
     }
   ]
-});
+}, { timestamps: true });
 
 // Middleware para registrar historial de cambios
 categorySchema.pre('save', function (next) {
@@ -71,15 +62,10 @@ categorySchema.pre('save', function (next) {
     });
 
     this.history.push({
-      updatedBy: this._updatedBy, // Este campo debe ser pasado manualmente en la actualización
+      updatedBy: this._updatedBy || null, // Este campo debe ser pasado manualmente en la actualización
       description: this._historyDescription || 'Actualización de categoría',
       changes
     });
-
-    // Limitar el historial a las últimas 10 modificaciones (opcional)
-    if (this.history.length > 10) {
-      this.history.shift();
-    }
   }
   next();
 });
