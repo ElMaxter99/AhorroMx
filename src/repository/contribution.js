@@ -101,15 +101,17 @@ async function create (contributionData) {
   }
 }
 
-async function updateContribution (contributionId, contributionData) {
+async function update (contributionId, contributionData) {
   try {
     if (!contributionId || !contributionData) {
       throw new Error('Invalid input: contributionId and contributionData are required');
     }
+
     const contribution = await Contribution.findByIdAndUpdate(contributionId, contributionData, { new: true });
     if (!contribution) {
       throw new Error('Contribution not found or no changes made');
     }
+
     return contribution;
   } catch (error) {
     throw new Error('Error updating contribution: ' + error.message);
@@ -140,6 +142,7 @@ async function getContribution (options = {}) {
     if (!contribution) {
       throw new Error('Contribution not found');
     }
+
     return contribution;
   } catch (error) {
     throw new Error('Error fetching contribution: ' + error.message);
@@ -178,16 +181,6 @@ async function deleteContribution (contributionId) {
     return result;
   } catch (error) {
     throw new Error('Error deleting contribution: ' + error.message);
-  }
-}
-
-async function listContributions (options = {}) {
-  try {
-    const { query, projection, population } = buildQueryAndProjection(options);
-    const contributions = await Contribution.find(query, projection).populate(population);
-    return contributions;
-  } catch (error) {
-    throw new Error('Error listing contributions: ' + error.message);
   }
 }
 
@@ -234,13 +227,12 @@ async function getListByUserAndGroup (userId, groupId, options = {}) {
 
 module.exports = {
   create,
-  update: updateContribution,
+  update,
   updateStatus,
   get: getContribution,
   getById,
   getList,
   delete: deleteContribution,
-  listContributions,
   // getListByExpense,
   getListByUser,
   getListByGroup,

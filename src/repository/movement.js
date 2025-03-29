@@ -2,7 +2,92 @@
 
 const Movement = require('../models/movement');
 
-async function createMovement (movementData) {
+function parseQueryValue (value) {
+  if (typeof value === 'string' && value.includes(',')) {
+    return { $in: value.split(',').map(v => v.trim()) };
+  }
+  return value;
+}
+
+function getQueryFromOptions (options = {}) {
+  const query = {};
+  if (options.user) {
+    query.user = parseQueryValue(options.user);
+  }
+
+  if (options.category) {
+    query.category = parseQueryValue(options.category);
+  }
+
+  if (options.type) {
+    query.type = parseQueryValue(options.type);
+  }
+
+  if (options.amount) {
+    query.amount = options.amount;
+  }
+
+  if (options.description) {
+    query.description = options.description;
+  }
+
+  if (options.startDate || options.endDate) {
+    query.date = {};
+    if (options.startDate) {
+      query.date.$gte = new Date(options.startDate);
+    }
+    if (options.endDate) {
+      query.date.$lte = new Date(options.endDate);
+    }
+  }
+
+  return query;
+}
+
+function getProjectionFromOptions (options = {}) {
+  let projection = {};
+  if (options.removeDate) {
+    projection.creationDate = 0;
+    projection.updateDate = 0;
+  }
+
+  if (options.removeUser) {
+    projection.user = 0;
+  }
+
+  if (options.removeCategory) {
+    projection.category = 0;
+  }
+
+  if (options.removeAmount) {
+    projection.amount = 0;
+  }
+
+  return projection;
+}
+
+function getPopulationFromOptions (options = {}) {
+  const population = [];
+  if (options.populateCategory) {
+    population.push({ path: 'category' });
+  }
+
+  if (options.populateUser) {
+    population.push({ path: 'user' });
+  }
+
+  return population;
+}
+
+function buildQueryAndProjection (options = {}) {
+  const query = getQueryFromOptions(options) || {};
+  const projection = getProjectionFromOptions(options) || {};
+  const population = getPopulationFromOptions(options) || [];
+
+  return { query, projection, population };
+}
+
+async function create (movementData) {
   try {
     const result = await Movement.create(movementData);
     return result;
@@ -11,7 +96,7 @@ async function createMovement (movementData) {
   }
 }
 
-async function updateMovement (movementId, movementData) {
+async function update (movementId, movementData) {
   try {
     if (!movementId || !movementData) {
       throw new Error('Invalid input: movementId and movementData are required');
@@ -26,9 +111,44 @@ async function updateMovement (movementId, movementData) {
   }
 }
 
-async function getMovementById (movementId) {
+async function updateCategory (movementId, categoryId) {
   try {
-    const movement = await Movement.findById(movementId);
+    if (!movementId || !categoryId) {
+      throw new Error('Invalid input: movementId and categoryId are required');
+    }
+
+    const movement = await Movement.findByIdAndUpdate(movementId, { category: categoryId }, { new: true });
+    if (!movement) {
+      throw new Error('Movement not found or no changes made');
+    }
+
+    return movement;
+  } catch (error) {
+    throw new Error('Error updating category to movement: ' + error.message);
+  }
+}
+
+async function updateType (movementId, type) {
+  try {
+    if (!movementId || !type) {
+      throw new Error('Invalid input: movementId and type are required');
+    }
+
+    const movement = await Movement.findByIdAndUpdate(movementId, { type }, { new: true });
+    if (!movement) {
+      throw new Error('Movement not found or no changes made');
+    }
+
+    return movement;
+  } catch (error) {
+    throw new Error('Error updating type to movement: ' + error.message);
+  }
+}
+
+async function getMovement (options = {}) {
+  try {
+    const { query, projection, population } = buildQueryAndProjection(options);
+    const movement = await Movement.findOne(query, projection).populate(population);
     if (!movement) {
       throw new Error('Movement not found');
     }
@@ -38,31 +158,76 @@ async function getMovementById (movementId) {
   }
 }
 
-async function deleteMovement (movementId) {
+async function getById (movementId, options = {}) {
   try {
-    const result = await Movement.deleteById(movementId);
-    if (!result) {
+    const { projection, population } = buildQueryAndProjection(options);
+    const movement = await Movement.findById(movementId, projection).populate(population);
+    if (!movement) {
       throw new Error('Movement not found');
     }
-    return result;
+
+    return movement;
+  } catch (error) {
+    throw new Error('Error fetching movement: ' + error.message);
+  }
+}
+
+async function getList (options = {}) {
+  try {
+    const { query, projection, population } = buildQueryAndProjection(options);
+    const movements = await Movement.find(query, projection).populate(population);
+    return movements;
+  } catch (error) {
+    throw new Error('Error fetching movements: ' + error.message);
+  }
+}
+
+async function deleteMovement (movementId) {
+  try {
+    if (!movementId) {
+      throw new Error('Invalid input: movementId is required');
+    }
+
+    const movement = await Movement.findByIdAndDelete(movementId);
+    if (!movement) {
+      throw new Error('Movement not found or no changes made');
+    }
+
+    return movement;
   } catch (error) {
     throw new Error('Error deleting movement: ' + error.message);
   }
 }
 
-async function listMovements (filter = {}) {
+async function getListByUser (userId, options = {}) {
   try {
-    const movements = await Movement.find(filter);
+    const { projection, population } = buildQueryAndProjection(options);
+    const movements = await Movement.find({ user: userId }, projection).populate(population);
     return movements;
   } catch (error) {
-    throw new Error('Error listing movements: ' + error.message);
+    throw new Error('Error fetching movements: ' + error.message);
+  }
+}
+
+async function getListByUserAndCategory (userId, categoryId, options = {}) {
+  try {
+    const { projection, population } = buildQueryAndProjection(options);
+    const movements = await Movement.find({ user: userId, category: categoryId }, projection).populate(population);
+    return movements;
+  } catch (error) {
+    throw new Error('Error fetching movements: ' + error.message);
   }
 }
 
 module.exports = {
-  createMovement,
-  updateMovement,
-  getMovementById,
-  deleteMovement,
-  listMovements
+  create,
+  update,
+  updateCategory,
+  updateType,
+  getMovement,
+  getById,
+  getList,
+  getListByUser,
+  getListByUserAndCategory,
+  delete: deleteMovement
 };

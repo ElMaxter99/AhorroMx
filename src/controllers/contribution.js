@@ -2,11 +2,9 @@
 
 const contributionBll = require('../bll/contribution');
 
-const { STATUS } = require('../enums/contribution');
-
 exports.create = async (req, res) => {
   try {
-    const contribution = await contributionBll.createContribution(req.body, req.user, req.query);
+    const contribution = await contributionBll.createContribution(req.body, req.user);
     res.status(201).json({ message: 'Contribución creada correctamente', contribution });
   } catch (error) {
     res.status(500).json({ message: 'Error al crear la contribución', error: error.message });
@@ -44,10 +42,6 @@ exports.updateStatus = async (req, res) => {
   try {
     const { contributionId } = req.params;
     const { status } = req.body;
-
-    if (!Object.values(STATUS).includes(status)) {
-      return res.status(400).json({ message: 'Estado no válido' });
-    }
 
     const updatedContribution = await contributionBll.updateContribution(contributionId, { status }, req.user);
     res.status(200).json({ message: 'Contribución actualizada correctamente', contribution: updatedContribution });

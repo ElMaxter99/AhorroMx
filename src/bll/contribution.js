@@ -1,6 +1,7 @@
 'use strict';
 
 const contributionRepository = require('../repository/contribution');
+
 const groupBll = require('./group');
 const expenseBll = require('./expense');
 
