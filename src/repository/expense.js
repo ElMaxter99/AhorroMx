@@ -2,10 +2,25 @@
 
 const Expense = require('../models/expense');
 
-function buildQueryProjectionAndPopulation (options) {
+const { parseQueryValues } = require('../utils/repositoryUtils');
+
+function getQueryFromOptions (options = {}) {
   const query = {};
-  const projection = {};
-  const population = [];
+  if (options.paidBy) {
+    query.paidBy = parseQueryValues(options.paidBy);
+  }
+
+  if (options.category) {
+    query.category = parseQueryValues(options.category);
+  }
+
+  if (options.group) {
+    query.group = parseQueryValues(options.group);
+  }
+
+  if (options.contributions) {
+    query.contributions = parseQueryValues(options.contributions);
+  }
 
   if (options.startDate || options.endDate) {
     query.date = {};
@@ -17,51 +32,58 @@ function buildQueryProjectionAndPopulation (options) {
     }
   }
 
-  if (options.amount) {
-    query.amount = options.amount;
-  }
+  return query;
+}
 
-  if (options.category) {
-    query.category = options.category;
-  }
-
-  if (options.removeCategory) {
-    projection.category = 0;
+function getProjectionFromOptions (options = {}) {
+  let projection = {};
+  if (options.removeTimestamps) {
+    projection.creationDate = 0;
+    projection.updateDate = 0;
   }
 
   if (options.removePaidBy) {
     projection.paidBy = 0;
   }
 
-  if (options.removeContributions) {
-    projection.contributions = 0;
+  if (options.removeCategory) {
+    projection.category = 0;
   }
 
   if (options.removeGroup) {
     projection.group = 0;
   }
 
-  if (options.sortBy) {
-    options.sort = { [options.sortBy]: options.sortOrder === 'desc' ? -1 : 1 };
+  if (options.removeContribution) {
+    projection.contributions = 0;
   }
 
-  if (options.populatePaidBy) {
-    population.push({ path: 'paidBy' });
+  if (options.removeCreatedBy) {
+    projection.createdBy = 0;
   }
 
+  return projection;
+}
+
+function getPopulationFromOptions (options = {}) {
+  const population = [];
   if (options.populateCategory) {
     population.push({ path: 'category' });
   }
 
-  if (options.populateGroup) {
-    population.push({ path: 'group' });
+  if (options.populateUser) {
+    population.push({ path: 'user' });
   }
 
-  if (options.populateContributions) {
-    population.push({ path: 'contributions' });
-  }
+  return population;
+}
 
-  return { query, projection, population, options };
+function buildQueryProjectionAndPopulation (options = {}) {
+  const query = getQueryFromOptions(options) || {};
+  const projection = getProjectionFromOptions(options) || {};
+  const population = getPopulationFromOptions(options) || [];
+
+  return { query, projection, population };
 }
 
 async function createExpense (expenseData) {

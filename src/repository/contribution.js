@@ -41,7 +41,7 @@ function getQueryFromOptions (options = {}) {
 
 function getProjectionFromOptions (options = {}) {
   let projection = {};
-  if (options.removeDate) {
+  if (options.removeTimestamps) {
     projection.creationDate = 0;
     projection.updateDate = 0;
   }
