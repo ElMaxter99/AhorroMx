@@ -22,7 +22,7 @@ exports.getById = async (req, res) => {
 
 exports.getList = async (req, res) => {
   try {
-    const movements = await movementBll.getList(req.user, req.query);
+    const movements = await movementBll.getList(req.query, req.user);
     res.status(200).json(movements);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener la lista de movimientos', error: error.message });
@@ -31,8 +31,8 @@ exports.getList = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    await movementBll.delete(req.params.movementId, req.user);
-    res.status(200).json({ message: 'Movimiento eliminado correctamente' });
+    const result = await movementBll.delete(req.params.movementId, req.user);
+    res.status(200).json({ message: 'Movimiento eliminado correctamente' }, result);
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar el movimiento', error: error.message });
   }

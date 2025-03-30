@@ -2,25 +2,20 @@
 
 const Movement = require('../models/movement');
 
-function parseQueryValue (value) {
-  if (typeof value === 'string' && value.includes(',')) {
-    return { $in: value.split(',').map(v => v.trim()) };
-  }
-  return value;
-}
+const { parseQueryValues } = require('../utils/repositoryUtils');
 
 function getQueryFromOptions (options = {}) {
   const query = {};
   if (options.user) {
-    query.user = parseQueryValue(options.user);
+    query.user = parseQueryValues(options.user);
   }
 
   if (options.category) {
-    query.category = parseQueryValue(options.category);
+    query.category = parseQueryValues(options.category);
   }
 
   if (options.type) {
-    query.type = parseQueryValue(options.type);
+    query.type = parseQueryValues(options.type);
   }
 
   if (options.amount) {
@@ -79,7 +74,7 @@ function getPopulationFromOptions (options = {}) {
   return population;
 }
 
-function buildQueryAndProjection (options = {}) {
+function buildQueryProjectionAndPopulation (options = {}) {
   const query = getQueryFromOptions(options) || {};
   const projection = getProjectionFromOptions(options) || {};
   const population = getPopulationFromOptions(options) || [];
@@ -101,6 +96,7 @@ async function update (movementId, movementData) {
     if (!movementId || !movementData) {
       throw new Error('Invalid input: movementId and movementData are required');
     }
+
     const result = await Movement.findByIdAndUpdate(movementId, movementData, { new: true });
     if (!result) {
       throw new Error('Movement not found or no changes made');
@@ -147,7 +143,7 @@ async function updateType (movementId, type) {
 
 async function getMovement (options = {}) {
   try {
-    const { query, projection, population } = buildQueryAndProjection(options);
+    const { query, projection, population } = buildQueryProjectionAndPopulation(options);
     const movement = await Movement.findOne(query, projection).populate(population);
     if (!movement) {
       throw new Error('Movement not found');
@@ -160,7 +156,7 @@ async function getMovement (options = {}) {
 
 async function getById (movementId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const movement = await Movement.findById(movementId, projection).populate(population);
     if (!movement) {
       throw new Error('Movement not found');
@@ -174,7 +170,7 @@ async function getById (movementId, options = {}) {
 
 async function getList (options = {}) {
   try {
-    const { query, projection, population } = buildQueryAndProjection(options);
+    const { query, projection, population } = buildQueryProjectionAndPopulation(options);
     const movements = await Movement.find(query, projection).populate(population);
     return movements;
   } catch (error) {
@@ -201,7 +197,7 @@ async function deleteMovement (movementId) {
 
 async function getListByUser (userId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const movements = await Movement.find({ user: userId }, projection).populate(population);
     return movements;
   } catch (error) {
@@ -211,7 +207,7 @@ async function getListByUser (userId, options = {}) {
 
 async function getListByUserAndCategory (userId, categoryId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const movements = await Movement.find({ user: userId, category: categoryId }, projection).populate(population);
     return movements;
   } catch (error) {

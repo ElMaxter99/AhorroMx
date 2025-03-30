@@ -31,8 +31,8 @@ exports.getList = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    await categoryBll.delete(req.params.categoryId, req.user);
-    res.status(200).json({ message: 'Categoría eliminada correctamente' });
+    const result = await categoryBll.delete(req.params.categoryId, req.user);
+    res.status(200).json({ message: 'Categoría eliminada correctamente' }, result);
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar la categoría', error: error.message });
   }

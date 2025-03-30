@@ -141,7 +141,7 @@ async function deleteContribution (contributionId, user) {
     throw new Error('Contribución no encontrada.');
   }
 
-  await contribution.remove();
+  return await contributionRepository.delete(contributionId);
 };
 exports.delete = deleteContribution;
 

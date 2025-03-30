@@ -1,305 +1,98 @@
 'use strict';
 
-const groupBll = require('../bll/group.js');
-const { simplifyDebts } = require('../services/debtService.js');
+const groupBll = require('../bll/group');
 
-const { ROLES } = require('../enums/user.js');
-
-exports.createGroup = async (req, res) => {
+exports.create = async (req, res) => {
   try {
-    const user = req.user;
-    const newGroup = groupBll.createGroup(req.body, user);
-
-    res.status(201).json({ message: 'Grupo creado con éxito', newGroup });
+    const group = await groupBll.create(req.body, req.user);
+    res.status(201).json({ message: 'Grupo creado correctamente' }, group);
   } catch (error) {
-    res.status(400).json({ message: 'Error al crear grupo', error });
+    res.status(500).json({ message: 'Error al crear el grupo', error: error.message });
   }
 };
 
-exports.getGroups = async (req, res) => {
+exports.getById = async (req, res) => {
   try {
-    const userGroupId = req.query.userGroupId || req.user._id;
-    const options = groupBll.getPopulateOptions(req.query);
-    const user = req.user;
-    const groups = await groupBll.getGroups(userGroupId, user, options);
-
-    res.status(200).json({
-      groups
-    });
+    const group = await groupBll.getById(req.params.groupId, req.user, req.query);
+    res.status(200).json(group);
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener grupos', error });
+    res.status(500).json({ message: 'Error al obtener el movimiento', error: error.message });
   }
 };
 
-exports.getGroupById = async (req, res) => {
+exports.getList = async (req, res) => {
   try {
-    const { groupId } = req.params;
-    const options = groupBll.getPopulateOptions(req.query);
-    const group = await Group.findById(groupId, user, options);
-    res.status(200).json({ group });
+    const groupList = await groupBll.getList(req.query, req.user);
+    res.status(200).json(groupList);
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener grupo', error });
+    res.status(500).json({ message: 'Error al obtener la lista de grupos', error: error.message });
   }
 };
 
-exports.updateGroup = async (req, res) => {
+exports.delete = async (req, res) => {
   try {
-    const { groupId } = req.params;
-    const group = await groupBll.findById(groupId, req.body, user);
-
-    if (!group) {
-      return res.status(404).json({ message: 'Grupo no encontrado' });
-    }
-
-    if (!group.admins.includes(req.user.id) && group.owner.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'No tienes permisos para actualizar este grupo' });
-    }
-
-    if (name) group.name = name;
-    if (description) group.description = description;
-    if (photoUrl) group.photoUrl = photoUrl;
-    if (members) group.members = members;
-    if (admins) group.admins = admins;
-
-    await group.save();
-    res.status(200).json({ message: 'Grupo actualizado correctamente', group });
+    const result = await groupBll.delete(req.params.groupId, req.user);
+    res.status(200).json({ message: 'Grupo borrado correctamente' }, result);
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el grupo', error });
+    res.status(500).json({ message: 'Error al eliminar el grupo', error: error.message });
   }
 };
 
-exports.getGroupsByUser = async (req, res) => {
+exports.update = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const groups = await Group.find({ members: userId });
-
-    res.status(200).json({ groups });
+    const updatedGroup = await groupBll.update(req.params.groupId, req.body, req.user);
+    res.status(200).json({ message: 'Grupo actualizado correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener grupos', error });
-  }
-};
-
-exports.getGroupDetails = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    const group = await Group.findById(groupId)
-      .populate('members', 'username email')
-      .populate('admins', 'username email');
-
-    if (!group) {
-      return res.status(404).json({ message: 'Grupo no encontrado' });
-    }
-
-    res.status(200).json({ group });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener detalles del grupo', error });
+    res.status(500).json({ message: 'Error al actualizar el grupo', error: error.message });
   }
 };
 
 exports.addMember = async (req, res) => {
   try {
-    const { groupId, userId } = req.body;
-    const group = await Group.findById(groupId);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-
-    if (group.members.includes(userId)) {
-      return res.status(400).json({ message: 'El usuario ya es miembro del grupo' });
-    }
-
-    group.members.push(userId);
-    await group.save();
-
-    res.status(200).json({ message: 'Usuario añadido al grupo', group });
+    const { groupId, newMemberId } = req.params;
+    const updatedGroup = await groupBll.addMember(groupId, newMemberId, req.user);
+    res.status(200).json({ message: 'Agregado miembro al grupo correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al añadir miembro', error });
+    res.status(500).json({ message: 'Error al agregar el miembro al el grupo', error: error.message });
   }
 };
 
 exports.removeMember = async (req, res) => {
   try {
-    const { groupId, userId } = req.body;
-    const group = await Group.findById(groupId);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-
-    group.members = group.members.filter(member => member.toString() !== userId);
-    group.admins = group.admins.filter(admin => admin.toString() !== userId); // Si era admin, lo quitamos
-    await group.save();
-
-    res.status(200).json({ message: 'Usuario eliminado del grupo', group });
+    const { groupId, memberId } = req.params;
+    const updatedGroup = await groupBll.removeMember(groupId, memberId, req.user);
+    res.status(200).json({ message: 'Eliminado miembro al grupo correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar miembro', error });
+    res.status(500).json({ message: 'Error al eliminar el miembro al el grupo', error: error.message });
   }
 };
 
-exports.setAdmin = async (req, res) => {
+exports.addAdmin = async (req, res) => {
   try {
-    const currentUser = req.user;
-    const { groupId, userId } = req.body;
-    const group = await Group.findById(groupId);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-
-    if (!group.members.includes(userId)) {
-      return res.status(400).json({ message: 'El usuario no pertenece al grupo' });
-    }
-
-    if (!group.admins.includes(currentUser._id.toString())) {
-      return res.status(401).json({ message: 'Solo los admins del grupo puede asignar otro admin' });
-    }
-
-    if (!group.admins.includes(userId)) {
-      group.admins.push(userId);
-      await group.save();
-      return res.status(200).json({ message: 'Usuario asignado como admin', group });
-    }
-
-    res.status(400).json({ message: 'El usuario ya es admin' });
+    const { groupId, newAdminId } = req.params;
+    const updatedGroup = await groupBll.addAdmin(groupId, newAdminId, req.user);
+    res.status(200).json({ message: 'Agregado admin al grupo correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al asignar admin', error });
+    res.status(500).json({ message: 'Error al agregar el admin al el grupo', error: error.message });
   }
 };
 
 exports.removeAdmin = async (req, res) => {
   try {
-    const currentUser = req.user;
-    const { groupId, userId } = req.body;
-    const group = await Group.findById(groupId);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-
-    if (!group.admins.includes(currentUser._id.toString())) {
-      return res.status(401).json({ message: 'Solo los admins del grupo puede eliminar otro admin' });
-    }
-
-    if (group.owner.toString() === userId) {
-      return res.status(400).json({ message: 'El dueño del grupo no puede perder su rol de admin' });
-    }
-
-    group.admins = group.admins.filter(admin => admin.toString() !== userId);
-    await group.save();
-
-    res.status(200).json({ message: 'Usuario eliminado como admin', group });
+    const { groupId, newAdminId } = req.params;
+    const updatedGroup = await groupBll.removeAdmin(groupId, newAdminId, req.user);
+    res.status(200).json({ message: 'Eliminado admin al grupo correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar admin', error });
-  }
-};
-
-exports.leaveGroup = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    const group = await Group.findById(groupId);
-
-    if (!group) {
-      return res.status(404).json({ message: 'Grupo no encontrado' });
-    }
-
-    if (!group.members.includes(req.user.id)) {
-      return res.status(400).json({ message: 'No eres miembro de este grupo' });
-    }
-
-    if (group.owner.toString() === req.user.id) {
-      return res.status(400).json({ message: 'No puedes salir del grupo si eres el creador. Transfiere la propiedad primero.' });
-    }
-
-    group.members = group.members.filter(member => member.toString() !== req.user.id);
-    group.admins = group.admins.filter(admin => admin.toString() !== req.user.id);
-
-    await group.save();
-    res.status(200).json({ message: 'Has salido del grupo', group });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al salir del grupo', error });
+    res.status(500).json({ message: 'Error al eliminar el admin al el grupo', error: error.message });
   }
 };
 
 exports.transferGroupOwnership = async (req, res) => {
   try {
-    const { groupId } = req.params;
-    const { newOwnerId } = req.body;
-
-    const group = await Group.findById(groupId);
-
-    if (!group) {
-      return res.status(404).json({ message: 'Grupo no encontrado' });
-    }
-
-    if (group.owner.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Solo el creador del grupo puede transferir la propiedad' });
-    }
-
-    if (!group.members.includes(newOwnerId)) {
-      return res.status(400).json({ message: 'El nuevo propietario debe ser miembro del grupo' });
-    }
-
-    group.owner = newOwnerId;
-
-    // Aseguramos que el nuevo dueño sea administrador también
-    if (!group.admins.includes(newOwnerId)) {
-      group.admins.push(newOwnerId);
-    }
-
-    await group.save();
-
-    res.status(200).json({ message: 'Propiedad del grupo transferida correctamente', group });
+    const { groupId, newOwnerId } = req.params;
+    const updatedGroup = await groupBll.transferGroupOwnership(groupId, newOwnerId, req.user);
+    res.status(200).json({ message: 'Transferida la propiedad del grupo correctamente' }, updatedGroup);
   } catch (error) {
-    res.status(500).json({ message: 'Error al transferir la propiedad del grupo', error });
-  }
-};
-
-exports.deleteGroup = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    const group = await Group.findById(groupId);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-
-    await Expense.deleteMany({ group: groupId });
-    await Contribution.deleteMany({ expense: { $in: await Expense.find({ group: groupId }).select('_id') } });
-
-    await Movement.create({
-      user: group.owner,
-      type: 'adjustment',
-      amount: 0,
-      description: `El grupo "${group.name}" ha sido eliminado.`
-    });
-
-    await Group.findByIdAndDelete(groupId);
-
-    res.status(200).json({ message: 'Grupo eliminado con éxito' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar grupo', error });
-  }
-};
-
-exports.joinGroup = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    let { newUserMember } = req.params;
-    newUserMember = newUserMember || req.user.id;
-
-    const group = await Group.findById(groupId);
-    const user = await User.findById(newUserMember);
-
-    if (!group) return res.status(404).json({ message: 'Grupo no encontrado' });
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    if (group.members.includes(user._id)) return res.status(501).json({ message: 'El usuario ya pertenece al grupo' });
-
-    group.members.push(user._id);
-    await group.save();
-    res.status(200).json({ message: 'Usuario añadido al grupo', group });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al agregar usuario al grupo', error });
-  }
-};
-
-exports.getSimplifiedDebts = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    const transactions = await simplifyDebts(groupId);
-    res.json(transactions);
-  } catch (error) {
-    console.error('Error al simplificar deudas:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error al transferir la propiedad  del grupo', error: error.message });
   }
 };

@@ -2,17 +2,12 @@
 
 const Category = require('../models/category');
 
-function parseQueryValue (value) {
-  if (typeof value === 'string' && value.includes(',')) {
-    return { $in: value.split(',').map(v => v.trim()) };
-  }
-  return value;
-}
+const { parseQueryValues } = require('../utils/repositoryUtils');
 
 function getQueryFromOptions (options = {}) {
   const query = {};
   if (options.name) {
-    query.name = parseQueryValue(options.name);
+    query.name = parseQueryValues(options.name);
   }
 
   if (options.description) {
@@ -20,7 +15,7 @@ function getQueryFromOptions (options = {}) {
   }
 
   if (options.active) {
-    query.active = parseQueryValue(options.active);
+    query.active = parseQueryValues(options.active);
   }
 
   if (options.startDate || options.endDate) {
@@ -36,10 +31,12 @@ function getQueryFromOptions (options = {}) {
   return query;
 }
 
-function buildQueryAndProjection (options = {}) {
+function buildQueryProjectionAndPopulation (options = {}) {
   const query = getQueryFromOptions(options) || {};
+  const projection = {};
+  const population = [];
 
-  return { query };
+  return { query, projection, population };
 }
 
 async function create (categoryData) {
@@ -147,7 +144,7 @@ async function updateActive (categoryId, active) {
 
 async function getCategory (options = {}) {
   try {
-    const { query } = buildQueryAndProjection(options);
+    const { query } = buildQueryProjectionAndPopulation(options);
     return await Category.find(query).exec();
   } catch (error) {
     throw new Error(`Error al obtener la categoría: ${error.message}`);
@@ -156,7 +153,7 @@ async function getCategory (options = {}) {
 
 async function getById (categoryId, options = {}) {
   try {
-    const { query } = buildQueryAndProjection(options);
+    const { query } = buildQueryProjectionAndPopulation(options);
     return await Category.findById(categoryId, query).exec();
   } catch (error) {
     throw new Error(`Error al obtener la categoría por ID: ${error.message}`);
@@ -165,7 +162,7 @@ async function getById (categoryId, options = {}) {
 
 async function getList (options = {}) {
   try {
-    const { query } = buildQueryAndProjection(options);
+    const { query } = buildQueryProjectionAndPopulation(options);
     return await Category.find(query).exec();
   } catch (error) {
     throw new Error(`Error al obtener la lista de categorías: ${error.message}`);

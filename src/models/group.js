@@ -9,8 +9,8 @@ const groupSchema = new mongoose.Schema(
       backgroundUrl: { type: String, default: '' }
     },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    admins: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] },
+    members: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] }
   },
   { timestamps: true }
 );

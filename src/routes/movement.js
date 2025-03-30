@@ -9,6 +9,7 @@ router.post('/', movementController.create);
 router.get('/:movementId', movementController.getById);
 
 router.get('/', movementController.getList);
+
 router.get('/user/:userId', movementController.getListByUser);
 router.get('/user/:userId/category/:categoryId', movementController.getListByUserAndCategory);
 

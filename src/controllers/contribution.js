@@ -22,8 +22,8 @@ exports.getById = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    await contributionBll.deleteContribution(req.params.contributionId, req.user);
-    res.status(200).json({ message: 'Contribución eliminada correctamente' });
+    const result = await contributionBll.deleteContribution(req.params.contributionId, req.user);
+    res.status(200).json({ message: 'Contribución eliminada correctamente' }, result);
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar la contribución', error: error.message });
   }
@@ -52,7 +52,7 @@ exports.updateStatus = async (req, res) => {
 
 exports.getList = async (req, res) => {
   try {
-    const contributions = await contributionBll.getList(req.user, req.query);
+    const contributions = await contributionBll.getList(req.query, req.user);
     res.status(200).json(contributions);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener la lista de contribuciones', error: error.message });

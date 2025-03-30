@@ -2,7 +2,7 @@
 
 const User = require('../models/user');
 
-function buildQueryAndProjection (options = {}) {
+function buildQueryProjectionAndPopulation (options = {}) {
   let filter = {};
   const projection = {};
 
@@ -68,7 +68,7 @@ async function updateUser (userId, userData) {
 }
 
 async function getUser (options = {}) {
-  const { filter, projection } = buildQueryAndProjection(options);
+  const { filter, projection } = buildQueryProjectionAndPopulation(options);
 
   try {
     const user = await User.findOne(filter, projection);
@@ -95,7 +95,7 @@ async function deleteUser (userId) {
 }
 
 async function getUserList (options = {}) {
-  const { filter, projection } = buildQueryAndProjection(options);
+  const { filter, projection } = buildQueryProjectionAndPopulation(options);
 
   try {
     const users = await User.find(filter, projection);

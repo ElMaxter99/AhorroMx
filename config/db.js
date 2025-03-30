@@ -7,9 +7,9 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000
     });
 
-    console.log('✅ MongoDB conectado');
+    console.log('✅ MongoDB connected OK !');
   } catch (error) {
-    console.error('❌ Error al conectar con MongoDB:', error.message);
+    console.error('❌ Error MongoDB KO:', error.message);
     process.exit(1);
   }
 };

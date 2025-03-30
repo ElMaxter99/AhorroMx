@@ -5,26 +5,12 @@ const movementRepository = require('../repository/movement');
 const { TYPE } = require('../enums/movement');
 const { USER_ROLES } = require('../enums/user');
 
-// function applyPopulateOptions (query, options) {
-//   const { populateCategory, populateUser } = options;
-
-//   if (populateCategory === 'true') {
-//     query = query.populate('category');
-//   }
-
-//   if (populateUser === 'true') {
-//     query = query.populate('user');
-//   }
-
-//   return query;
-// }
-
 async function createMovement (data, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = user._id.toString() === data.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para crear este movimiento.');
+    throw new Error('You do not have permission to create this movement.');
   }
 
   const savedMovement = await movementRepository.createMovement(data);
@@ -35,14 +21,14 @@ exports.create = createMovement;
 async function update (movementId, data, user) {
   const movement = await getById(movementId, user);
   if (!movement) {
-    throw new Error('Movimiento no encontrado.');
+    throw new Error('Movement not found.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = user._id.toString() === movement.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para actualizar este movimiento.');
+    throw new Error('You do not have permission to update this movement.');
   }
 
   const updatedMovement = await movementRepository.update(movementId, data);
@@ -53,14 +39,14 @@ exports.update = update;
 async function updateCategory (movementId, categoryId, user) {
   const movement = await getById(movementId, user);
   if (!movement) {
-    throw new Error('Movimiento no encontrado.');
+    throw new Error('Movement not found.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = user._id.toString() === movement.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para actualizar este movimiento.');
+    throw new Error('You do not have permission to update this movement.');
   }
 
   const updatedMovement = await movementRepository.updateCategory(movementId, categoryId);
@@ -71,14 +57,14 @@ exports.updateCategory = updateCategory;
 async function updateType (movementId, type, user) {
   const movement = await getById(movementId, user);
   if (!movement) {
-    throw new Error('Movimiento no encontrado.');
+    throw new Error('Movement not found.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = user._id.toString() === movement.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para actualizar este movimiento.');
+    throw new Error('You do not have permission to update this movement.');
   }
 
   const updatedMovement = await movementRepository.updateType(movementId, type);
@@ -89,7 +75,7 @@ exports.updateType = updateType;
 async function getById (movementId, user, options = {}) {
   const movement = await movementRepository.getById(movementId, options);
   if (!movement) {
-    console.log('Movimiento no encontrado.');
+    console.log('Movement not found.');
     return null;
   }
 
@@ -97,7 +83,7 @@ async function getById (movementId, user, options = {}) {
   const isSameUser = user._id.toString() === movement.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para ver este movimiento.');
+    throw new Error('You do not have permission to view this movement.');
   }
 
   return movement;
@@ -107,7 +93,7 @@ exports.getById = getById;
 async function getList (options = {}, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   if (!isAdmin) {
-    // Si no es admin, solo se le permite ver sus propios movimientos
+    // If not admin, only allow viewing their own movements
     options.user = user._id.toString();
     if (options.type) {
       const requestedTypes = options.type.split(',');
@@ -126,15 +112,10 @@ async function getListByUser (userId, options = {}) {
   const isAdmin = options.user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = options.user._id.toString() === userId.toString();
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para ver estos movimientos.');
+    throw new Error('You do not have permission to view these movements.');
   }
 
   const movements = await movementRepository.getListByUser(userId, options);
-  if (!movements) {
-    console.log('Movimientos no encontrados.');
-    return null;
-  }
-
   return movements;
 }
 exports.getListByUser = getListByUser;
@@ -143,12 +124,12 @@ async function getListByUserAndCategory (userId, categoryId, options = {}) {
   const isAdmin = options.user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = options.user._id.toString() === userId.toString();
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para ver estos movimientos.');
+    throw new Error('You do not have permission to view these movements.');
   }
 
   const movements = await movementRepository.getListByUserAndCategory(userId, categoryId, options);
   if (!movements) {
-    console.log('Movimientos no encontrados.');
+    console.log('Movements not found.');
     return null;
   }
 
@@ -159,16 +140,16 @@ exports.getListByUserAndCategory = getListByUserAndCategory;
 async function deleteMovement (movementId, user) {
   const movement = await getById(movementId, user);
   if (!movement) {
-    throw new Error('Movimiento no encontrado.');
+    throw new Error('Movement not found.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isSameUser = user._id.toString() === movement.user.toString();
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permiso para eliminar este movimiento.');
+    throw new Error('You do not have permission to delete this movement.');
   }
 
-  await movementRepository.deleteMovement(movementId);
+  return await movementRepository.delete(movementId);
 }
 exports.delete = deleteMovement;

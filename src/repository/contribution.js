@@ -2,25 +2,20 @@
 
 const Contribution = require('../models/contribution');
 
-function parseQueryValue (value) {
-  if (typeof value === 'string' && value.includes(',')) {
-    return { $in: value.split(',').map(v => v.trim()) };
-  }
-  return value;
-}
+const { parseQueryValues } = require('../utils/repositoryUtils');
 
 function getQueryFromOptions (options = {}) {
   const query = {};
   if (options.user) {
-    query.user = parseQueryValue(options.user);
+    query.user = parseQueryValues(options.user);
   }
 
   if (options.expense) {
-    query.expense = parseQueryValue(options.expense);
+    query.expense = parseQueryValues(options.expense);
   }
 
   if (options.status) {
-    query.status = parseQueryValue(options.status);
+    query.status = parseQueryValues(options.status);
   }
 
   if (options.amount) {
@@ -84,7 +79,7 @@ function getPopulationFromOptions (options = {}) {
   return population;
 }
 
-function buildQueryAndProjection (options = {}) {
+function buildQueryProjectionAndPopulation (options = {}) {
   const query = getQueryFromOptions(options) || {};
   const projection = getProjectionFromOptions(options) || {};
   const population = getPopulationFromOptions(options) || [];
@@ -137,7 +132,7 @@ async function updateStatus (contributionId, status) {
 
 async function getContribution (options = {}) {
   try {
-    const { query, projection, population } = buildQueryAndProjection(options);
+    const { query, projection, population } = buildQueryProjectionAndPopulation(options);
     const contribution = await Contribution.findOne(query, projection).populate(population);
     if (!contribution) {
       throw new Error('Contribution not found');
@@ -151,7 +146,7 @@ async function getContribution (options = {}) {
 
 async function getById (contributionId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const contribution = await Contribution.findById(contributionId, projection).populate(population);
     if (!contribution) {
       throw new Error('Contribution not found');
@@ -164,7 +159,7 @@ async function getById (contributionId, options = {}) {
 
 async function getList (options = {}) {
   try {
-    const { query, projection, population } = buildQueryAndProjection(options);
+    const { query, projection, population } = buildQueryProjectionAndPopulation(options);
     const contributions = await Contribution.find(query, projection).populate(population);
     return contributions;
   } catch (error) {
@@ -186,7 +181,7 @@ async function deleteContribution (contributionId) {
 
 // async function getListByExpense (expenseId, options = {}) {
 //   try {
-//     const { projection, population } = buildQueryAndProjection(options);
+//     const { projection, population } = buildQueryProjectionAndPopulation(options);
 //     const contributions = await Contribution.find({ expense: expenseId }, projection).populate(population);
 //     return contributions;
 //   } catch (error) {
@@ -196,7 +191,7 @@ async function deleteContribution (contributionId) {
 
 async function getListByUser (userId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
 
     const contributions = await Contribution.find({ user: userId }, projection).populate(population);
     return contributions;
@@ -207,7 +202,7 @@ async function getListByUser (userId, options = {}) {
 
 async function getListByGroup (groupId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const contributions = await Contribution.find({ group: groupId }, projection).populate(population);
     return contributions;
   } catch (error) {
@@ -217,7 +212,7 @@ async function getListByGroup (groupId, options = {}) {
 
 async function getListByUserAndGroup (userId, groupId, options = {}) {
   try {
-    const { projection, population } = buildQueryAndProjection(options);
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
     const contributions = await Contribution.find({ user: userId, group: groupId }, projection).populate(population);
     return contributions;
   } catch (error) {
