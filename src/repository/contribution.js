@@ -64,7 +64,7 @@ function getPopulationFromOptions (options = {}) {
   }
 
   if (options.populateUser) {
-    population.push({ path: 'user' });
+    population.push({ path: 'user', select: '-credentials' });
   }
 
   if (options.populateGroup) {

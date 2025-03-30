@@ -69,12 +69,8 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     select: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
-});
+}, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

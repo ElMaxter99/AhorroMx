@@ -68,7 +68,7 @@ function getPopulationFromOptions (options = {}) {
   }
 
   if (options.populateUser) {
-    population.push({ path: 'user' });
+    population.push({ path: 'user', select: '-credentials' });
   }
 
   return population;
@@ -101,6 +101,7 @@ async function update (movementId, movementData) {
     if (!result) {
       throw new Error('Movement not found or no changes made');
     }
+
     return result;
   } catch (error) {
     throw new Error('Error updating movement: ' + error.message);
@@ -148,6 +149,7 @@ async function getMovement (options = {}) {
     if (!movement) {
       throw new Error('Movement not found');
     }
+
     return movement;
   } catch (error) {
     throw new Error('Error fetching movement: ' + error.message);

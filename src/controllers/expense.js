@@ -6,32 +6,51 @@ exports.createExpense = async (req, res) => {
   try {
     const { user } = req;
     const newExpense = await expenseBll.createExpense(req.body, user);
-    res.json(newExpense);
+    res.status(201).json(newExpense);
   } catch (error) {
     res.status(500).json({ error: 'Error al crear el gasto.', details: error.message });
   }
 };
 
-exports.getExpenseById = async (req, res) => {
+exports.getById = async (req, res) => {
   try {
-    const { expenseId } = req.params;
-    const { user } = req;
-    const { populateContributions } = req.query;
-    const options = { populateContributions };
-
-    const expense = await expenseBll.getExpenseById(expenseId, user, options);
-
-    res.json(expense);
+    const expense = await expenseBll.getExpenseById(req.params.expenseId, req.user, req.query);
+    res.status(200).json(expense);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener el gasto.', details: error.message });
   }
 };
 
-exports.updateExpense = async (req, res) => {
+exports.getList = async (req, res) => {
   try {
-    const { expenseId } = req.params;
-    const { user } = req;
-    const updatedExpense = await expenseBll.updateExpense(expenseId, req.body, user);
+    const expenseList = await expenseBll.getList(req.query, req.user);
+    res.status(200).json(expenseList);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los gastos.', details: error.message });
+  }
+};
+
+exports.getListByGroup = async (req, res) => {
+  try {
+    const expenseList = await expenseBll.getListByUser(req.params.userId, req.user, req.query);
+    res.status(200).json(expenseList);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los gastos.', details: error.message });
+  }
+};
+
+exports.getListByUser = async (req, res) => {
+  try {
+    const expenseList = await expenseBll.getListByGroup(req.params.groupId, req.user, req.query);
+    res.status(200).json(expenseList);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los gastos.', details: error.message });
+  }
+};
+
+exports.update = async (req, res) => {
+  try {
+    const updatedExpense = await expenseBll.updateExpense(req.params.expenseId, req.body, req.user);
     res.json(updatedExpense);
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar el gasto.', details: error.message });
@@ -40,41 +59,9 @@ exports.updateExpense = async (req, res) => {
 
 exports.deleteExpense = async (req, res) => {
   try {
-    const { expenseId } = req.params;
-    const { user } = req;
-    await expenseBll.deleteExpense(expenseId, user);
+    await expenseBll.deleteExpense(req.params.expenseId, req.user);
     res.json({ message: 'Gasto eliminado correctamente.' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar el gasto.', details: error.message });
-  }
-};
-
-exports.getExpenseByGroup = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-    const { user } = req;
-    const options = {
-      populateContributions: req.query.populateContributions
-    };
-
-    const expenses = await expenseBll.getExpenseByGroup(groupId, user, options);
-    res.json(expenses);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los gastos.', details: error.message });
-  }
-};
-
-exports.getExpensesByUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { user } = req;
-    const options	= {
-      populateContributions: req.query.populateContributions
-    };
-
-    const expenses = await expenseBll.getExpensesByUser(userId, user, options);
-    res.json(expenses);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los gastos.', details: error.message });
   }
 };

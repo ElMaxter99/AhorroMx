@@ -6,33 +6,6 @@ const userBll = require('../bll/user');
 
 const { USER_ROLES } = require('../enums/user');
 
-// exports.getPopulateOptions = function getPopulateOptions (reqQuery) {
-//   const options = {
-//     populateOwner: reqQuery.populateOwner || 'false',
-//     populateAdmins: reqQuery.populateAdmins || 'false',
-//     populateMembers: reqQuery.populateMembers || 'false'
-//   };
-//   return options;
-// };
-
-// function applyPopulateOptions (query, options) {
-//   const { populateOwner, populateAdmins, populateMembers } = options;
-
-//   if (populateOwner === 'true') {
-//     query = query.populate('owner');
-//   }
-
-//   if (populateAdmins === 'true') {
-//     query = query.populate('admins');
-//   }
-
-//   if (populateMembers === 'true') {
-//     query = query.populate('members');
-//   }
-
-//   return query;
-// }
-
 /**
  * Checks if a user is a member, admin, or owner of a specified group.
  *
@@ -41,19 +14,19 @@ const { USER_ROLES } = require('../enums/user');
  * @param {Object|string} user - The user object or user ID to check.
  * @param {Object|string} group - The group object or group ID to check.
  * @returns {Promise<boolean>} - Returns `true` if the user is a member, admin, or owner of the group, otherwise `false`.
- * @throws {Error} - Throws an error if the group does not exist.
  */
 async function isUserInGroup (user, group) {
-  if (!group._id) {
+  if (!group || !user) {
+    console.log('Error al ver si un usuario existe en un grupo');
+    return false;
+  }
+
+  if (!group?._id) {
     group = await groupRepository.findById(group);
   }
 
-  if (!user._id) {
+  if (!user?._id) {
     user = await userBll.findById(user);
-  }
-
-  if (!group || !user) {
-    throw new Error('Error al ver si un usuario existe en un grupo');
   }
 
   const userIsMemberGroup = group.members?.includes(user._id);
@@ -72,19 +45,19 @@ exports.isUserInGroup = isUserInGroup;
  * @param {Object|string} user - The user object or user ID to check.
  * @param {Object|string} group - The group object or group ID to check.
  * @returns {Promise<boolean>} - Returns `true` if the user is a member of the group, otherwise `false`.
- * @throws {Error} - Throws an error if the group does not exist.
  */
 async function isUserMemberGroup (user, group) {
+  if (!group || !user) {
+    console.log('Error al verificar si un usuario es miembro del grupo.');
+    return false;
+  }
+
   if (!group._id) {
     group = await groupRepository.findById(group);
   }
 
   if (!user._id) {
     user = await userBll.findById(user);
-  }
-
-  if (!group || !user) {
-    throw new Error('Error al verificar si un usuario es miembro del grupo.');
   }
 
   return group.members?.includes(user._id) || false;
@@ -99,19 +72,19 @@ exports.isUserMemberGroup = isUserMemberGroup;
  * @param {Object|string} user - The user object or user ID to check.
  * @param {Object|string} group - The group object or group ID to check.
  * @returns {Promise<boolean>} - Returns `true` if the user is an admin of the group, otherwise `false`.
- * @throws {Error} - Throws an error if the group does not exist.
  */
 async function isUserAdminGroup (user, group) {
+  if (!group || !user) {
+    console.log('Error al verificar si un usuario es administrador del grupo.');
+    return false;
+  }
+
   if (!group._id) {
     group = await groupRepository.findById(group);
   }
 
   if (!user._id) {
     user = await userBll.findById(user);
-  }
-
-  if (!group || !user) {
-    throw new Error('Error al verificar si un usuario es administrador del grupo.');
   }
 
   return group.admins?.includes(user._id) || false;
@@ -126,19 +99,19 @@ exports.isUserAdminGroup = isUserAdminGroup;
  * @param {Object|string} user - The user object or user ID to check.
  * @param {Object|string} group - The group object or group ID to check.
  * @returns {Promise<boolean>} - Returns `true` if the user is the owner of the group, otherwise `false`.
- * @throws {Error} - Throws an error if the group does not exist.
  */
 async function isUserOwnerGroup (user, group) {
+  if (!group || !user) {
+    console.log('Error al verificar si un usuario es propietario del grupo.');
+    return false;
+  }
+
   if (!group._id) {
     group = await groupRepository.findById(group);
   }
 
   if (!user._id) {
     user = await userBll.findById(user);
-  }
-
-  if (!group || !user) {
-    throw new Error('Error al verificar si un usuario es propietario del grupo.');
   }
 
   return group.owner?.toString() === user._id.toString();
@@ -156,6 +129,10 @@ exports.create = create;
 
 async function get (options = {}, user) {
   const group = await groupRepository.get(options);
+  if (!group) {
+    return null;
+  }
+
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isMember = await isUserMemberGroup(user, group);
   if (!isAdmin && !isMember) {
@@ -179,6 +156,10 @@ exports.getList = getList;
 
 async function getById (groupId, user, options) {
   const group = await groupRepository.getById(groupId, options);
+  if (!group) {
+    return null;
+  }
+
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
   const isMember = group ? await isUserMemberGroup(user, group) : false;
   if (!isAdmin && !isMember) {

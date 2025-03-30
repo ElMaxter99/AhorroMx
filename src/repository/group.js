@@ -64,15 +64,15 @@ function getProjectionFromOptions (options = {}) {
 function getPopulationFromOptions (options = {}) {
   const population = [];
   if (options.populateOwner) {
-    population.push({ path: 'owner' });
+    population.push({ path: 'owner', select: '-credentials' });
   }
 
   if (options.populateAdmins) {
-    population.push({ path: 'admins' });
+    population.push({ path: 'admins', select: '-credentials' });
   }
 
   if (options.populateMembers) {
-    population.push({ path: 'members' });
+    population.push({ path: 'members', select: '-credentials' });
   }
 
   return population;

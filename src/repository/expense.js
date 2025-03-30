@@ -67,12 +67,20 @@ function getProjectionFromOptions (options = {}) {
 
 function getPopulationFromOptions (options = {}) {
   const population = [];
+  if (options.populatePaidBy) {
+    population.push({ path: 'paidBy', select: '-credentials' });
+  }
+
   if (options.populateCategory) {
     population.push({ path: 'category' });
   }
 
-  if (options.populateUser) {
-    population.push({ path: 'user' });
+  if (options.populateGroup) {
+    population.push({ path: 'group' });
+  }
+
+  if (options.populateContributions) {
+    population.push({ path: 'contribution' });
   }
 
   return population;
@@ -86,7 +94,7 @@ function buildQueryProjectionAndPopulation (options = {}) {
   return { query, projection, population };
 }
 
-async function createExpense (expenseData) {
+async function create (expenseData) {
   try {
     const expense = await Expense.create(expenseData);
     return expense;
@@ -95,7 +103,7 @@ async function createExpense (expenseData) {
   }
 };
 
-async function updateExpense (expenseId, expenseData) {
+async function update (expenseId, expenseData) {
   try {
     if (!expenseId || !expenseData) {
       throw new Error('Invalid input: expenseId and expenseData are required');
@@ -104,16 +112,61 @@ async function updateExpense (expenseId, expenseData) {
     if (!expense) {
       throw new Error('Expense not found or no changes made');
     }
+
     return expense;
   } catch (error) {
     throw new Error('Error updating expense: ' + error.message);
   }
 }
 
-async function getExpense (options = {}) {
-  const { query, projection } = buildQueryProjectionAndPopulation(options);
+async function updateCategory (expenseId, categoryId) {
   try {
-    const expenses = await Expense.findOne(query, projection);
+    if (!expenseId || !categoryId) {
+      throw new Error('Invalid input: expenseId and categoryId are required');
+    }
+    const expense = await Expense.findByIdAndUpdate(expenseId, { category: categoryId }, { new: true });
+    if (!expense) {
+      throw new Error('Expense not found or no changes made');
+    }
+
+    return expense;
+  } catch (error) {
+    throw new Error('Error updating expense: ' + error.message);
+  }
+}
+
+async function addContribution (expenseId, contributionId) {
+  try {
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      expenseId,
+      { $push: { contributions: contributionId } },
+      { new: true }
+    );
+
+    return updatedExpense;
+  } catch (error) {
+    throw new Error('Error updating expense: ' + error.message);
+  }
+}
+
+async function removeContribution (expenseId, contributionId) {
+  try {
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      expenseId,
+      { $pull: { contributions: contributionId } },
+      { new: true }
+    );
+
+    return updatedExpense;
+  } catch (error) {
+    throw new Error('Error updating expense: ' + error.message);
+  }
+}
+
+async function get (options = {}) {
+  const { query, projection, population } = buildQueryProjectionAndPopulation(options);
+  try {
+    const expenses = await Expense.findOne(query, projection).population(population);
     if (!expenses) {
       throw new Error('No expense found');
     }
@@ -124,55 +177,59 @@ async function getExpense (options = {}) {
   }
 }
 
-async function getExpenseById (expenseId, options = {}) {
+async function getById (expenseId, options = {}) {
   const { projection, population } = buildQueryProjectionAndPopulation(options);
   try {
-    let queryBuilder = await Expense.findById(expenseId, projection);
-
-    population.forEach(populateOption => {
-      queryBuilder = queryBuilder.populate(populateOption);
-    });
-
-    const expense = await queryBuilder;
-
-    if (!expense) {
-      throw new Error('Expense not found');
-    }
+    const expense = await Expense.findById(expenseId, projection).populate(population);
     return expense;
   } catch (error) {
     throw new Error('Error fetching expense: ' + error.message);
   }
 }
 
-async function getExpenseList (options = {}) {
+async function getList (options = {}) {
   const { query, projection, population } = buildQueryProjectionAndPopulation(options);
   try {
-    let queryBuilder = Expense.find(query, projection);
-
-    population.forEach(populateOption => {
-      queryBuilder = queryBuilder.populate(populateOption);
-    });
-
-    const expenses = await queryBuilder;
-    return expenses;
+    const expenseList = await Expense.find(query, projection).population(population);
+    return expenseList;
   } catch (error) {
     throw new Error('Error listing expenses: ' + error.message);
+  }
+}
+
+async function getListByUserInGroup (userId, options = {}) {
+  const { projection, population } = buildQueryProjectionAndPopulation(options);
+  try {
+    const expenseList = await Expense.find({
+      $or: [
+        { 'group.members': userId },
+        { 'group.admins': userId },
+        { 'group.owner': userId }
+      ]
+    }, projection).populate(population);
+    return expenseList;
+  } catch (error) {
+    throw new Error('Error fetching expenses: ' + error.message);
   }
 }
 
 async function getListByGroup (groupId, options = {}) {
   const { projection, population } = buildQueryProjectionAndPopulation(options);
   try {
-    let queryBuilder = Expense.find({ group: groupId }, projection);
-
-    population.forEach(populateOption => {
-      queryBuilder = queryBuilder.populate(populateOption);
-    });
-
-    const expenses = await queryBuilder;
-    return expenses;
+    const expenseList = await Expense.find({ group: groupId }, projection).populate(population);
+    return expenseList;
   } catch (error) {
     throw new Error('Error listing expenses: ' + error.message);
+  }
+}
+
+async function getListByUser (userId, options = {}) {
+  const { projection, population } = buildQueryProjectionAndPopulation(options);
+  try {
+    const expenseList = await Expense.find({ paidBy: userId }, projection).populate(population);
+    return expenseList;
+  } catch (error) {
+    throw new Error('Error fetching expenses: ' + error.message);
   }
 }
 
@@ -182,92 +239,24 @@ async function deleteExpense (expenseId) {
     if (!result) {
       throw new Error('Expense not found');
     }
+
     return result;
   } catch (error) {
     throw new Error('Error deleting expense: ' + error.message);
   }
 }
 
-async function getExpensesByGroup (groupId, options = {}) {
-  const { query, projection, population } = buildQueryProjectionAndPopulation(options);
-  query.group = groupId;
-
-  try {
-    let queryBuilder = Expense.find(query, projection);
-
-    population.forEach(populateOption => {
-      queryBuilder = queryBuilder.populate(populateOption);
-    });
-
-    const expenses = await queryBuilder;
-    return expenses;
-  } catch (error) {
-    throw new Error('Error fetching expenses: ' + error.message);
-  }
-}
-
-async function getExpensesByUser (userId, options = {}) {
-  const { query, projection, population } = buildQueryProjectionAndPopulation(options);
-  query.paidBy = userId;
-
-  try {
-    let queryBuilder = Expense.find(query, projection);
-
-    population.forEach(populateOption => {
-      queryBuilder = queryBuilder.populate(populateOption);
-    });
-
-    const expenses = await queryBuilder;
-    return expenses;
-  } catch (error) {
-    throw new Error('Error fetching expenses: ' + error.message);
-  }
-}
-
-async function addContribution (expenseId, contributionData) {
-  try {
-    const expense = await Expense.findByIdAndUpdate(
-      expenseId,
-      { $push: { contributions: contributionData } },
-      { new: true }
-    );
-    if (!expense) {
-      throw new Error('Expense not found');
-    }
-
-    return expense;
-  } catch (error) {
-    throw new Error('Error adding contribution: ' + error.message);
-  }
-}
-
-async function removeContribution (expenseId, contributionId) {
-  try {
-    const expense = await Expense.findByIdAndUpdate(
-      expenseId,
-      { $pull: { contributions: { _id: contributionId } } },
-      { new: true }
-    );
-    if (!expense) {
-      throw new Error('Expense not found');
-    }
-
-    return expense;
-  } catch (error) {
-    throw new Error('Error removing contribution: ' + error.message);
-  }
-}
-
 module.exports = {
-  createExpense,
-  updateExpense,
-  getExpense,
-  getExpenseById,
-  getListByGroup,
-  getExpenseList,
-  deleteExpense,
-  getExpensesByGroup,
-  getExpensesByUser,
+  create,
+  update,
+  updateCategory,
   addContribution,
-  removeContribution
+  removeContribution,
+  get,
+  getById,
+  getList,
+  getListByGroup,
+  getListByUser,
+  getListByUserInGroup,
+  detele: deleteExpense
 };

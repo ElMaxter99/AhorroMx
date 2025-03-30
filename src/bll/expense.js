@@ -1,76 +1,78 @@
 'use strict';
 
-const expenseModel = require('../models/expense'); // BORRAR arreglar toda la bll
 const expenseRepository = require('../repository/expense');
 
 const groupBll = require('./group');
+const userBll = require('./user');
 
 const { USER_ROLES } = require('../enums/user');
 
-function applyPopulateOptions (query, options) {
-  const { populateContributions } = options;
-
-  if (populateContributions === 'true') {
-    query = query.populate('contributions');
+async function isExpenseCreatedByUser (expense, user) {
+  if (!expense || !user) {
+    throw new Error('Expense and user are required.');
   }
 
-  return query;
+  if (!expense._id) {
+    expense = await getById(expense);
+  }
+
+  if (!user._id) {
+    user = await userBll.getById(user);
+  }
+
+  return expense.createdBy?.toString() === user._id?.toString();
 }
 
-exports.createExpense = async function createExpense (data, user) {
+async function createExpense (data, user) {
   data.createdBy = user ? user._id : null;
 
-  const isAdmin = user && user.role && user.role.includes(USER_ROLES.ADMIN);
-  const isMember = await groupBll.validateUserInGroup(user, groupId);
+  const isAdmin = user?.role?.includes(USER_ROLES.ADMIN);
+  const isMember = await groupBll.isUserInGroup(user, data.group);
 
   if (!isAdmin && !isMember) {
     throw new Error('No tienes permiso para agregar gastos a este grupo.');
   }
 
-  const newExpense = new expenseModel(data);
-  try {
-    const savedExpense = await newExpense.save();
-    return savedExpense;
-  } catch (error) {
-    console.error('Error al guardar el gasto:', error);
-    throw new Error('Hubo un error al guardar el gasto.');
-  }
+  const newExpense = await expenseRepository.create(data);
+  return newExpense;
 };
+exports.create = createExpense;
 
 async function getById (expenseId, user, options = {}) {
-  let query = expenseModel.findById(expenseId);
-  query = applyPopulateOptions(query, options);
-  query.populate('group');
-
-  try {
-    const expense = await query;
-    if (!expense) {
-      throw new Error('Gasto no encontrado.');
-    }
-
-    const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-    const isMember = expense.group?.members?.includes(user._id);
-
-    if (!isAdmin && !isMember) {
-      throw new Error('No tienes permiso para ver este gasto.');
-    }
-
-    return expense;
-  } catch (error) {
-    console.error('Error al obtener el gasto:', error);
-    throw new Error('Hubo un error al obtener el gasto.');
+  const expense = await expenseRepository.getById(expenseId, options);
+  if (!expense) {
+    return null;
   }
+
+  const isAdmin = user.role?.includes(USER_ROLES.ADMIN);
+  const isUserInGroup = groupBll.isUserInGroup(user, expense?.group);
+  if (!isAdmin && !isUserInGroup) {
+    throw new Error('You do not have permission to view these expense');
+  }
+
+  return expense;
 };
 exports.getById = getById;
 
+async function getList (options = {}, user) {
+  const isAdmin = user.role?.includes(USER_ROLES.ADMIN);
+  if (!isAdmin) {
+    return await expenseRepository.getListByUserInGroup(user._id);
+  }
+
+  return await expenseRepository.getList(options);
+}
+exports.getList = getList;
+
 async function getListByGroup (groupId, user, options = {}) {
   try {
-    const group = await groupBll.getGroupById(groupId, user);
-    if (!group) {
-      throw new Error('Grupo no encontrado.');
+    const isAdmin = user.role?.includes(USER_ROLES.ADMIN);
+    const isUserInGroup = await groupBll.isUserInGroup(user, groupId);
+    if (!isAdmin && !isUserInGroup) {
+      throw new Error('You do not have permission to view these expense');
     }
 
-    const expenseList = await expenseRepository.getListByGroup(options);
+    const expenseList = await expenseRepository.getListByGroup(groupId, options);
     return expenseList;
   } catch (error) {
     throw new Error('Error listing expenses: ' + error.message);
@@ -78,94 +80,56 @@ async function getListByGroup (groupId, user, options = {}) {
 }
 exports.getListByGroup = getListByGroup;
 
-exports.updateExpense = async function updateExpense (expenseId, newData, user) {
-  const expense = await expenseModel.findById(expenseId).populate('group');
+async function getListByUSer (userId, user, options = {}) {
+  try {
+    const isAdmin = user.role?.includes(USER_ROLES.ADMIN);
+    const isSameUser = user._id.toString() === userId.toString();
+    if (!isAdmin && !isSameUser) {
+      throw new Error('You do not have permission to view these expense');
+    }
+
+    const expenseList = await expenseRepository.getListByUser(userId, options);
+    return expenseList;
+  } catch (error) {
+    throw new Error('Error listing expenses: ' + error.message);
+  }
+}
+exports.getListByUser = getListByUSer;
+
+async function updateExpense (expenseId, newData, user) {
+  const expense = await expenseRepository.getById(expenseId).populate('group');
   if (!expense) {
     throw new Error('Gasto no encontrado.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = expense.group?.members?.includes(user._id);
-  if (!isAdmin && !isMember) {
+  const isAdminGroup = await groupBll.isUserAdminGroup(user, expense.group);
+  const isExpenseCreator = await isExpenseCreatedByUser(expense, user);
+
+  if (!isAdmin && !isAdminGroup && !isExpenseCreator) {
     throw new Error('No tienes permiso para actualizar este gasto.');
   }
 
-  Object.assign(expense, newData);
-  try {
-    await expense.save();
-  } catch (error) {
-    console.error('Error al guardar el gasto:', error);
-    throw new Error('Hubo un error al guardar el gasto.');
-  }
+  const updatedExpense = expenseRepository.update(newData);
+  return updatedExpense;
 };
+exports.update = updateExpense;
 
-exports.deleteExpense = async function deleteExpense (expenseId, user) {
-  const expense = await expenseModel.findById(expenseId);
+async function deleteExpense (expenseId, user) {
+  const expense = await expenseRepository.getById(expenseId).populate('group');
   if (!expense) {
     throw new Error('Gasto no encontrado.');
   }
 
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isMember = expense.group?.members?.includes(user._id);
+  const isAdminGroup = await groupBll.isUserAdminGroup(user, expense.group);
+  const isExpenseCreator = await isExpenseCreatedByUser(expense, user);
 
-  if (!isAdmin && !isMember) {
-    throw new Error('No tienes permiso para eliminar este gasto.');
+  if (!isAdmin && !isAdminGroup && !isExpenseCreator) {
+    throw new Error('No tienes permiso para actualizar este gasto.');
   }
 
-  try {
-    await expense.delete();
-    return expense;
-  } catch (error) {
-    console.error('Error al eliminar el gasto:', error);
-    throw new Error('Hubo un error al eliminar el gasto.');
-  }
+  const updatedExpense = expenseRepository.delete(expenseId);
+  return updatedExpense;
 };
-
-exports.getExpensesByGroup = async function getExpensesByGroup (groupId, user, options = {}) {
-  let query = expenseModel.find({ group: groupId });
-  query = applyPopulateOptions(query, options);
-  query.populate('group');
-
-  try {
-    const expenses = await query;
-    if (!expenses) {
-      throw new Error('No se encontraron gastos.');
-    }
-
-    const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-    const isMember = expense.group?.members?.includes(user._id);
-
-    if (!isAdmin && !isMember) {
-      throw new Error('No tienes permiso para ver este gasto.');
-    }
-
-    return expenses;
-  } catch (error) {
-    console.error('Error al obtener los gastos:', error);
-    throw new Error('Hubo un error al obtener los gastos.');
-  }
-};
-
-exports.getExpensesByUser = async function getExpensesByUser (userId, user, options = {}) {
-  let query = expenseModel.find({ paidBy: userId });
-  query = applyPopulateOptions(query, options);
-  query.populate('group');
-
-  try {
-    const expenses = await query;
-    if (!expenses) {
-      throw new Error('No se encontraron gastos.');
-    }
-
-    const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-    const isMember = expense.group?.members?.includes(user._id);
-    if (!isAdmin && !isMember) {
-      throw new Error('No tienes permiso para ver este gasto.');
-    }
-
-    return expenses;
-  } catch (error) {
-    console.error('Error al obtener los gastos:', error);
-    throw new Error('Hubo un error al obtener los gastos.');
-  }
-};
+exports.delete = deleteExpense;
