@@ -15,6 +15,14 @@ const loadKey = (keyPath, keyName) => {
 };
 
 module.exports = {
+  APP_NAME: process.env.APP_NAME || 'SplitFlow',
+  APP_VERSION: process.env.APP_VERSION || '1.0.0',
+  APP_URL: process.env.APP_URL || 'http://localhost:5000',
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  LOGS: {
+    CONSOLE_LOG_LEVEL: process.env.CONSOLE_LOG_LEVEL || 'info', // Controla el nivel de consola
+    LOG_LEVEL: process.env.LOG_LEVEL || 'info' // Controla el nivel general
+  },
   PORT: process.env.PORT || 5000,
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/splitflow',
   JWT_PRIVATE_KEY: loadKey(jwtPrivateKeyPath, 'Clave privada'),

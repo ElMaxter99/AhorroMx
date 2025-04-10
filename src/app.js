@@ -5,22 +5,25 @@ const path = require('path');
 const connectDB = require('../config/db');
 const routes = require('./routes');
 const { notFoundHandler, internalErrorHandler } = require('./middlewares/errorHandler');
-const { logger, errorLogger } = require('../config/logger');
+const { httpLogger, httpErrorLogger } = require('../config/logger');
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware de morgan para acceso
+app.use(httpLogger);
 
 connectDB();
-
-// Middleware para registrar accesos y errores
-app.use(logger);
-app.use(errorLogger); // Esto graba solo errores 4xx/5xx en el archivo de errores
 
 // Rutas de la API
 app.use('/api', routes);
 
 // Servir archivos estáticos desde la carpeta "public"
 app.use('/public', express.static(path.join(__dirname, '../public')));
+
+// Middleware para errores (si necesitas diferenciar logs)
+app.use(httpErrorLogger);
 
 // Middleware para manejar rutas no encontradas
 app.use(notFoundHandler);

@@ -1,52 +1,81 @@
+const winston = require('winston');
 const morgan = require('morgan');
-const rfs = require('rotating-file-stream');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const config = require('./index');
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Crear directorio de logs si no existe
+const logDir = path.join(__dirname, '../logs');
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
-// Crear carpeta de logs si no existe
-const logDirectory = path.join(__dirname, '../logs');
-if (!fs.existsSync(logDirectory)) {
-  fs.mkdirSync(logDirectory);
-}
+// Crear streams para morgan
+const createLogStream = (filename) =>
+  fs.createWriteStream(path.join(logDir, filename), { flags: 'a' });
 
-// Function para generar nombre de archivo con fecha
-const getLogFileName = (prefix) => (time, index) => {
-  if (!time) return `${prefix}.log`;
+const accessLogStream = createLogStream('access.log');
+const errorLogStream = createLogStream('error.log');
 
-  const year = time.getFullYear();
-  const month = `${time.getMonth() + 1}`.padStart(2, '0');
-  const day = `${time.getDate()}`.padStart(2, '0');
-
-  return `${prefix}-${year}-${month}-${day}.log`;
+// 🎨 Colores personalizados para los logs
+const levelColors = {
+  info: '\x1b[32m', // verde
+  warn: '\x1b[33m', // amarillo
+  error: '\x1b[31m', // rojo
+  debug: '\x1b[36m', // cyan
+  default: '\x1b[37m' // blanco
 };
 
-// Streams rotativos
-const accessLogStream = rfs.createStream(getLogFileName('access'), {
-  interval: '1d',
-  path: logDirectory,
-  compress: 'gzip'
-});
-
-const errorLogStream = rfs.createStream(getLogFileName('error'), {
-  interval: '1d',
-  path: logDirectory,
-  compress: 'gzip'
+// 🎯 Formato para consola y archivos
+const customFormat = winston.format.printf(({ timestamp, level, message, stack }) => {
+  const color = levelColors[level] || levelColors.default;
+  const reset = '\x1b[0m';
+  return `${timestamp} ${color}${level.toUpperCase()}${reset}: ${message}${stack ? `\n${stack}` : ''}`;
 });
 
 // Logger principal
-const logger = isProduction
-  ? morgan('combined', { stream: accessLogStream }) // logs normales
-  : morgan('dev'); // consola para desarrollo
-
-// Logger sólo para errores (4xx y 5xx)
-const errorLogger = morgan('combined', {
-  skip: (req, res) => res.statusCode < 400,
-  stream: errorLogStream
+const logger = winston.createLogger({
+  level: config.NODE_ENV === 'development' ? 'debug' : 'info',
+  format: winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    customFormat
+  ),
+  transports: [
+    new winston.transports.Console(), // Solo usa customFormat con colores
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 10485760,
+      maxFiles: 5
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, 'access.log'),
+      level: 'info',
+      maxsize: 10485760,
+      maxFiles: 5
+    })
+  ]
 });
 
-module.exports = {
-  logger,
-  errorLogger
-};
+// Morgan para accesos HTTP
+const morganFormat = config.NODE_ENV === 'production' ? 'combined' : 'dev';
+
+const httpLogger = morgan(morganFormat, {
+  stream: {
+    write: (msg) => {
+      logger.info(msg.trim());
+      accessLogStream.write(msg);
+    }
+  }
+});
+
+// Morgan solo para errores 4xx y 5xx
+const httpErrorLogger = morgan(morganFormat, {
+  skip: (req, res) => res.statusCode < 400,
+  stream: {
+    write: (msg) => {
+      logger.error(msg.trim());
+      errorLogStream.write(msg);
+    }
+  }
+});
+
+module.exports = { logger, httpLogger, httpErrorLogger };

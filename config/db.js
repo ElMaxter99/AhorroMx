@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
+
 const config = require('../config');
+
+const { logger } = require('./logger');
 
 const connectDB = async () => {
   try {
@@ -7,9 +10,9 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000
     });
 
-    console.log('✅ MongoDB connected OK !');
+    logger.info('✅ MongoDB connected OK !');
   } catch (error) {
-    console.error('❌ Error MongoDB KO:', error.message);
+    logger.error('❌ Error MongoDB KO:', error);
     process.exit(1);
   }
 };
