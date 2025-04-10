@@ -24,6 +24,7 @@ module.exports = {
     LOG_LEVEL: process.env.LOG_LEVEL || 'info' // Controla el nivel general
   },
   PORT: process.env.PORT || 5000,
+  HTTPS_PORT: process.env.HTTPS_PORT || 3000,
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/splitflow',
   JWT_PRIVATE_KEY: loadKey(jwtPrivateKeyPath, 'Clave privada'),
   JWT_PUBLIC_KEY: loadKey(jwtPublicKeyPath, 'Clave pública'),
@@ -63,5 +64,10 @@ module.exports = {
     REGION: process.env.STORAGE_REGION,
     ACCESS_KEY: process.env.STORAGE_ACCESS_KEY,
     SECRET_KEY: process.env.STORAGE_SECRET_KEY
+  },
+  CERTS: {
+    DIR: process.env.CERTS_DIR || path.join(__dirname, 'certs'),
+    KEY_PATH: process.env.CERTS_KEY || path.join(__dirname, 'certs', 'privkey.pem'),
+    CERT_PATH: process.env.CERTS_CERT || path.join(__dirname, 'certs', 'fullchain.pem')
   }
 };
