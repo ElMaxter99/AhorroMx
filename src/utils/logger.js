@@ -59,6 +59,7 @@ const logger = winston.createLogger({
 const morganFormat = config.NODE_ENV === 'production' ? 'combined' : 'dev';
 
 const httpLogger = morgan(morganFormat, {
+  skip: (req, res) => res.statusCode >= 400,
   stream: {
     write: (msg) => {
       logger.info(msg.trim());
