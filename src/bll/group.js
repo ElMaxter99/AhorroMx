@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 const groupRepository = require('../repository/group');
 
 const userBll = require('../bll/user');
@@ -324,3 +326,14 @@ async function transferGroupOwnership (groupId, newOwnerId, user) {
   return await groupRepository.updateOwner(groupId, newOwnerId);
 };
 exports.transferGroupOwnership = transferGroupOwnership;
+
+async function hasGroupsInCommon (userId, groupId, user) {
+  if (!userId || !groupId) {
+    throw new Error('User ID and Group ID are required.');
+  }
+
+  const userList = _.uniqBy([userId.toString(), user._id.toString()]);
+  const groups = await groupRepository.getGroupsByUser(userList, { _id: groupId });
+  return groups.length > 0;
+}
+exports.hasGroupsInCommon = hasGroupsInCommon;

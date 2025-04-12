@@ -15,11 +15,11 @@ async function canCreateInvitation (data, user) {
     return false; // Datos inválidos
   }
 
-  const isAdmin = await userBll.isAdmin(user);
+  const isAdmin = await userBll.hasAdminRole(user);
   if (isAdmin) return true; // Admin can accept any invitation
 
   const isOwner = await groupBll.isOwner(data.group, user);
-  const isGroupAdmin = await groupBll.isAdmin(data.group, user);
+  const isGroupAdmin = await groupBll.hasAdminRole(data.group, user);
   const invitedUserNotInGroup = await groupBll.isMember(data.group, data.invitedUser) === false;
   const canCreate = isAdmin || isOwner || isGroupAdmin;
   if (!canCreate) {
@@ -39,11 +39,11 @@ async function canUpdateInvitation (data, user) {
     return false; // Datos inválidos
   }
 
-  const isAdmin = await userBll.isAdmin(user);
+  const isAdmin = await userBll.hasAdminRole(user);
   if (isAdmin) return true; // Admin can accept any invitation
 
   const isOwner = await groupBll.isOwner(data.group, user);
-  const isGroupAdmin = await groupBll.isAdmin(data.group, user);
+  const isGroupAdmin = await groupBll.hasAdminRole(data.group, user);
   const invitedUserNotInGroup = await groupBll.isMember(data.group, data.invitedUser) === false;
   const isSameAsInvitedBy = data.invitedBy.toString() === user.id.toString();
   const isSameAsInvitedUser = data.invitedUser.toString() === user.id.toString();
@@ -65,7 +65,7 @@ async function canDeleteInvitation (data, user) {
     return false; // Datos inválidos
   }
 
-  const isAdmin = await userBll.isAdmin(user);
+  const isAdmin = await userBll.hasAdminRole(user);
   if (isAdmin) return true; // Admin can accept any invitation
 
   const canDelete = isAdmin;
@@ -82,7 +82,7 @@ async function canViewInvitation (groupInvitation, user) {
     return false; // Datos inválidos
   }
 
-  const isAdmin = await userBll.isAdmin(user);
+  const isAdmin = await userBll.hasAdminRole(user);
   if (isAdmin) return true; // Admin can accept any invitation
 
   const isGroupMember = await groupBll.isMember(groupInvitation.group, user);
@@ -116,7 +116,7 @@ exports.canTransitionStatus = canTransitionStatus;
 function canAcceptInvitation (groupInvitation, user) {
   if (!groupInvitation || !user) return false;
 
-  const isAdmin = userBll.isAdmin(user);
+  const isAdmin = userBll.hasAdminRole(user);
   if (isAdmin) return true;
 
   const { invitedUser, status } = groupInvitation;
@@ -131,13 +131,13 @@ exports.canAcceptInvitation = canAcceptInvitation;
 function canDeclineInvitation (groupInvitation, user) {
   if (!groupInvitation || !user) return false;
 
-  const isAdmin = userBll.isAdmin(user);
+  const isAdmin = userBll.hasAdminRole(user);
   if (isAdmin) return true;
 
   const { invitedUser, invitedBy, status } = groupInvitation;
   const isInvitedUser = invitedUser.toString() === user.id.toString();
   const isInvitedByUser = invitedBy.toString() === user.id.toString();
-  const isAdminGroup = groupBll.isAdmin(groupInvitation.group, user);
+  const isAdminGroup = groupBll.hasAdminRole(groupInvitation.group, user);
   const isValidStatusChange = canTransitionStatus(status, INVITATION_STATUS.DECLINED);
 
   const canDeclineInvitation = (isInvitedByUser || isInvitedUser || isAdminGroup) && isValidStatusChange;
@@ -148,12 +148,12 @@ exports.canDeclineInvitation = canDeclineInvitation;
 function canCancelInvitation (groupInvitation, user) {
   if (!groupInvitation || !user) return false;
 
-  const isAdmin = userBll.isAdmin(user);
+  const isAdmin = userBll.hasAdminRole(user);
   if (isAdmin) return true;
 
   const { invitedBy, status } = groupInvitation;
   const isInvitedByUser = invitedBy.toString() === user.id.toString();
-  const isAdminGroup = groupBll.isAdmin(groupInvitation.group, user);
+  const isAdminGroup = groupBll.hasAdminRole(groupInvitation.group, user);
   const isValidStatusChange = canTransitionStatus(status, INVITATION_STATUS.CANCELLED);
 
   const canCancelInvitation = (isInvitedByUser || isAdminGroup) && isValidStatusChange;
@@ -164,7 +164,7 @@ exports.canCancelInvitation = canCancelInvitation;
 function canSendInvitation (groupInvitation, user) {
   if (!groupInvitation || !user) return false;
 
-  const isAdmin = userBll.isAdmin(user);
+  const isAdmin = userBll.hasAdminRole(user);
   if (isAdmin) return true;
 
   const { invitedBy, status } = groupInvitation;
@@ -403,7 +403,7 @@ async function deleteStatusInvitation (id, user) {
     throw new Error('User does not have permission to view group invitation');
   }
 
-  const isAdmin = await userBll.isAdmin(user);
+  const isAdmin = await userBll.hasAdminRole(user);
   const isInvitedUser = user.id.toString() !== groupInvitation.invitedBy.toString();
 
   if (!isAdmin && !isInvitedUser) {

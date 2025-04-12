@@ -66,14 +66,13 @@ const userSchema = new mongoose.Schema({
     }
   },
   active: {
-    type: Boolean,
-    default: true,
-    select: false
+    type: Boolean
+  },
+  blocked: {
+    type: Boolean
   },
   deleted: {
-    type: Boolean,
-    default: false,
-    select: false
+    type: Boolean
   }
 }, { timestamps: true });
 
