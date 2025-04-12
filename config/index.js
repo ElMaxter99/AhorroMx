@@ -26,7 +26,7 @@ module.exports = {
   },
   PORT: process.env.PORT || 5000,
   HTTPS_PORT: process.env.HTTPS_PORT || 3000,
-  MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/splitflow',
+  MONGO_URI: process.env.MONGO_URI || '',
   JWT_PRIVATE_KEY: loadKey(jwtPrivateKeyPath, 'Clave privada'),
   JWT_PUBLIC_KEY: loadKey(jwtPublicKeyPath, 'Clave pública'),
   JWT_ALGORITHM: 'RS256', // Algoritmo de firma RSA

@@ -4,6 +4,7 @@ const Category = require('../src/models/category');
 const Group = require('../src/models/group');
 
 const config = require('../config');
+const { logger } = require('../src/utils/logger');
 
 const args = process.argv.slice(2);
 const noClean = args.includes('--no-clean');
@@ -17,21 +18,20 @@ const seedDatabase = async () => {
     if (!config.MONGO_URI) {
       throw new Error('❌ MONGO_URI is not defined in the environment variables');
     }
-
     await mongoose.connect(config.MONGO_URI, {
       serverSelectionTimeoutMS: 5000
     });
-    console.log('📡 Conectado a MongoDB');
+    logger.info('📡 Conectado a MongoDB');
 
     if (!noClean && !logOnly) {
       await User.deleteMany();
       await Category.deleteMany();
       await Group.deleteMany();
-      console.log('🧹 Base de datos limpiada');
+      logger.info('🧹 Base de datos limpiada');
     }
 
     if (logOnly) {
-      console.log('📝 Modo log activado. No se modificarán los datos.');
+      logger.info('📝 Modo log activado. No se modificarán los datos.');
       mongoose.connection.close();
       return;
     }
@@ -67,7 +67,7 @@ const seedDatabase = async () => {
         role: ['ADMIN', 'USER']
       });
 
-      console.log('✅ Usuarios creados');
+      logger.info('✅ Usuarios creados');
     }
 
     if (!usersOnly && !categoriesOnly) {
@@ -80,7 +80,7 @@ const seedDatabase = async () => {
         members: [user._id, userAdmin._id]
       });
 
-      console.log('✅ Grupo creado');
+      logger.info('✅ Grupo creado');
     }
 
     if (!usersOnly && !groupsOnly) {
@@ -106,13 +106,13 @@ const seedDatabase = async () => {
         }))
       );
 
-      console.log('✅ Categorías creadas');
+      logger.info('✅ Categorías creadas');
     }
 
-    console.log('🎉 Seed completado');
+    logger.info('🎉 Seed completado');
     mongoose.connection.close();
   } catch (error) {
-    console.error('❌ Error en el seed:', error);
+    logger.error('❌ Error en el seed:', error);
     mongoose.connection.close();
   }
 };

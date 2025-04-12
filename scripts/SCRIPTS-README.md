@@ -4,7 +4,7 @@ Este directorio contiene scripts para inicializar y administrar la base de datos
 
 ## **Scripts Disponibles**
 
-### **Seed MongoDB (`seed.js`)
+### **Seed MongoDB (`seed.js`)**
 Este script inicializa la base de datos con datos de prueba, creando usuarios, grupos y categorías.
 
 #### **Uso**
@@ -18,17 +18,18 @@ node scripts/seed.js [opciones]
 - `--users-only`: Solo crea los usuarios, sin afectar grupos ni categorías.
 - `--groups-only`: Solo crea los grupos, sin afectar usuarios ni categorías.
 - `--categories-only`: Solo crea las categorías, sin afectar usuarios ni grupos.
+- `--seed-all`: Ejecuta el seed completo (usuarios, grupos y categorías). **Este argumento es obligatorio para que el script realice acciones.**
 
 #### **Ejemplos**
 
-- Ejecutar el script normalmente:
+- Ejecutar el seed completo:
   ```sh
-  node scripts/seed.js
+  node scripts/seed.js --seed-all
   ```
 
 - Ejecutar sin limpiar la base de datos:
   ```sh
-  node scripts/seed.js --no-clean
+  node scripts/seed.js --seed-all --no-clean
   ```
 
 - Mostrar solo el changelog:
@@ -38,17 +39,17 @@ node scripts/seed.js [opciones]
 
 - Solo insertar usuarios:
   ```sh
-  node scripts/seed.js --users-only
+  node scripts/seed.js --seed-all --users-only
   ```
 
 - Solo insertar grupos:
   ```sh
-  node scripts/seed.js --groups-only
+  node scripts/seed.js --seed-all --groups-only
   ```
 
 - Solo insertar categorías:
   ```sh
-  node scripts/seed.js --categories-only
+  node scripts/seed.js --seed-all --categories-only
   ```
 
 ---
