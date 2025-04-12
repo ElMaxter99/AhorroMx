@@ -39,3 +39,7 @@ jspm_packages/
 config/jwt/*.pem
 # Lock files
 package-lock.json
+
+#VsCode
+.vscode
+.vscode-test

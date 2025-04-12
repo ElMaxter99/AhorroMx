@@ -2,7 +2,7 @@ const winston = require('winston');
 const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
-const config = require('./index');
+const config = require('../../config/index');
 
 // Crear directorio de logs si no existe
 const logDir = path.join(__dirname, '../logs');

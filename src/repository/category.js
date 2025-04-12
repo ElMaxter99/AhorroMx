@@ -19,12 +19,12 @@ function getQueryFromOptions (options = {}) {
   }
 
   if (options.startDate || options.endDate) {
-    query.date = {};
+    query.creationDate = {};
     if (options.startDate) {
-      query.date.$gte = new Date(options.startDate);
+      query.creationDate.$gte = new Date(options.startDate);
     }
     if (options.endDate) {
-      query.date.$lte = new Date(options.endDate);
+      query.creationDate.$lte = new Date(options.endDate);
     }
   }
 

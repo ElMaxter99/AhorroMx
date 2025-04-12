@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+const { logger } = require('../src/utils/logger');
+try {
+  require('dotenv').config();
+} catch (error) {
+  logger.warn('⚠️ dotenv no está instalado. Las variables de entorno deben configurarse manualmente.');
+}
 
 const jwtPrivateKeyPath = path.join(__dirname, './jwt/jwt-private.pem');
 const jwtPublicKeyPath = path.join(__dirname, './jwt/jwt-public.pem');
@@ -8,7 +13,7 @@ const jwtPublicKeyPath = path.join(__dirname, './jwt/jwt-public.pem');
 // Cargar claves RSA (si no existen, lanzar error)
 const loadKey = (keyPath, keyName) => {
   if (!fs.existsSync(keyPath)) {
-    console.error(`❌ ERROR: ${keyName} no encontrado en ${keyPath}`);
+    logger.error(`❌ ERROR: ${keyName} no encontrado en ${keyPath}`);
     process.exit(1);
   }
   return fs.readFileSync(keyPath, 'utf8');
@@ -18,6 +23,7 @@ module.exports = {
   APP_NAME: process.env.APP_NAME || 'SplitFlow',
   APP_VERSION: process.env.APP_VERSION || '1.0.0',
   APP_URL: process.env.APP_URL || 'http://localhost:5000',
+  FRONTEND_URL: process.env.FRONTEND_URL,
   NODE_ENV: process.env.NODE_ENV || 'development',
   LOGS: {
     CONSOLE_LOG_LEVEL: process.env.CONSOLE_LOG_LEVEL || 'info', // Controla el nivel de consola
@@ -56,8 +62,6 @@ module.exports = {
     USER: process.env.EMAIL_USER,
     PASS: process.env.EMAIL_PASS
   },
-
-  FRONTEND_URL: process.env.FRONTEND_URL,
 
   STORAGE: {
     BUCKET: process.env.STORAGE_BUCKET,

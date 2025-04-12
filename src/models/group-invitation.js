@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const { STATUS } = require('../enums/groupInvitation');
+const { STATUS } = require('../enums/group-invitation');
 
 const groupInvitationSchema = new mongoose.Schema(
   {
@@ -23,12 +23,9 @@ const groupInvitationSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(STATUS),
       default: STATUS.DRAFT
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
     }
-  }
+  },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model('GroupInvitation', groupInvitationSchema);

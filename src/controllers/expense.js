@@ -2,7 +2,7 @@
 
 const expenseBll = require('../bll/expense');
 
-exports.createExpense = async (req, res) => {
+exports.create = async (req, res) => {
   try {
     const { user } = req;
     const newExpense = await expenseBll.createExpense(req.body, user);
@@ -57,7 +57,7 @@ exports.update = async (req, res) => {
   }
 };
 
-exports.deleteExpense = async (req, res) => {
+exports.delete = async (req, res) => {
   try {
     await expenseBll.deleteExpense(req.params.expenseId, req.user);
     res.json({ message: 'Gasto eliminado correctamente.' });

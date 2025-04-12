@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/', authMiddleware, groupController.create);
 
-router.get('/:groupId', authMiddleware, groupController.geById);
+router.get('/:groupId', authMiddleware, groupController.getById);
 
 router.get('/', authMiddleware, groupController.getList);
 

@@ -1,7 +1,7 @@
 const sendEmail = require('../utils/emailSender');
 const config = require('../../config');
 
-const GROUP_INVITATION_STATUS = require('../enums/groupInvitation').STATUS;
+const GROUP_INVITATION_STATUS = require('../enums/group-invitation').STATUS;
 
 /**
  * Envía una invitación a un grupo.
@@ -15,7 +15,7 @@ const sendGroupInvitationEmail = async (emailTo, data) => {
   const subject = '📩 Invitación a un grupo';
   const template = {
     templateType: 'emails',
-    templateName: 'groupInvitation'
+    templateName: 'group-invitation'
   };
 
   const templateData = {

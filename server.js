@@ -4,7 +4,7 @@ const https = require('https');
 
 const config = require('./config');
 const app = require('./src/app');
-const { logger } = require('./config/logger');
+const { logger } = require('./src/utils/logger');
 
 const {
   APP_NAME,

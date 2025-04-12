@@ -10,6 +10,42 @@ function sanitizeUser (user) {
   const { username, password, passwordHistory, email, profileInfo, ...sanitizedUser } = user.toObject ? user.toObject() : user;
   return sanitizedUser;
 }
+exports.sanitizeUser = sanitizeUser;
+
+function isAdminRole (user) {
+  return user.role.includes(USER_ROLES.ADMIN);
+}
+exports.isAdmin = isAdminRole;
+
+function isUserRole (user) {
+  return user.role.includes(USER_ROLES.USER);
+};
+exports.isUser = isUserRole;
+
+function isSameUser (userId, user) {
+  return user._id.toString() === userId.toString();
+}
+exports.isSameUser = isSameUser;
+
+function isUserActive (user) {
+  return user.active;
+}
+exports.isUserActive = isUserActive;
+
+function isUserBlocked (user) {
+  return !user.active;
+}
+exports.isUserBlocked = isUserBlocked;
+
+function isUserDeleted (user) {
+  return user.deleted;
+}
+exports.isUserDeleted = isUserDeleted;
+
+function hasRole (user, role) {
+  return user.role.includes(role);
+}
+exports.hasRole = hasRole;
 
 exports.createUser = async function createUser (data, user) {
   if (!user.role.includes(USER_ROLES.ADMIN)) {

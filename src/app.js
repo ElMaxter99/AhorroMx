@@ -1,12 +1,10 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
 const connectDB = require('../config/db');
 const routes = require('./routes');
 const { notFoundHandler, internalErrorHandler } = require('./middlewares/errorHandler');
-const { httpLogger, httpErrorLogger } = require('../config/logger');
-
+const { httpLogger, httpErrorLogger } = require('./utils/logger');
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
