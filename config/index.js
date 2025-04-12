@@ -1,11 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { logger } = require('../src/utils/logger');
-try {
-  require('dotenv').config();
-} catch (error) {
-  logger.warn('⚠️ dotenv no está instalado. Las variables de entorno deben configurarse manualmente.');
-}
 
 const jwtPrivateKeyPath = path.join(__dirname, './jwt/jwt-private.pem');
 const jwtPublicKeyPath = path.join(__dirname, './jwt/jwt-public.pem');
