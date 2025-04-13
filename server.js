@@ -15,12 +15,14 @@ const {
   CERTS
 } = config;
 
+const NODE_ENVS = require('./src/enums/constants');
+
 const logStartup = (protocol, port) => {
   logger.info(`🚀 ${APP_NAME} v${APP_VERSION} - ${NODE_ENV.toUpperCase()}`);
   logger.info(`${protocol} server listening on port ${port}`);
 };
 
-if (NODE_ENV === 'production' && fs.existsSync(CERTS.KEY_PATH) && fs.existsSync(CERTS.CERT_PATH)) {
+if (NODE_ENV === NODE_ENVS.PRODUCTION && fs.existsSync(CERTS.KEY_PATH) && fs.existsSync(CERTS.CERT_PATH)) {
   const credentials = {
     key: fs.readFileSync(CERTS.KEY_PATH, 'utf8'),
     cert: fs.readFileSync(CERTS.CERT_PATH, 'utf8')

@@ -2,10 +2,25 @@
 
 const userBll = require('../bll/user');
 
+const config = require('../../config/index');
+
+const { PROFILE_IMAGES_DIR } = config.UPLOADS;
+
+// TODO --> Repasar todos los return de las bll porque devuelvo true y no el objeto y no hace falta q lo ponga en el res.json
+
 exports.create = async (req, res) => {
   try {
     const user = await userBll.create(req.body);
     res.status(201).json({ message: 'Usuario creado correctamente' }, user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
+  }
+};
+
+exports.register = async (req, res) => {
+  try {
+    const reposponseRegister = await userBll.register(req.body);
+    res.status(201).json({ message: 'Usuario creado correctamente' }, reposponseRegister);
   } catch (error) {
     res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
   }
@@ -62,24 +77,6 @@ exports.update = async (req, res) => {
     res.status(200).json({ message: 'Usuario actualizado correctamente' }, updatedUser);
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
-  }
-};
-
-exports.updateProfileInfo = async (req, res) => {
-  try {
-    const updatedUser = await userBll.updateProfileInfo(req.params.userId, req.body, req.user);
-    res.status(200).json({ message: 'Usuario actualizado correctamente' }, updatedUser);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
-  }
-};
-
-exports.updateProfilePicture = async (req, res) => {
-  try {
-    const updatedUser = await userBll.updateProfilePicture(req.params.userId, req.body, req.user);
-    res.status(200).json({ message: 'Foto de perfil actualizada correctamente' }, updatedUser);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar la foto de perfil', error: error.message });
   }
 };
 
@@ -172,3 +169,31 @@ exports.unblockUser = async (req, res) => {
     res.status(500).json({ message: 'Error al desbloquear el usuario', error: error.message });
   }
 };
+
+// Sube la imagen de perfil
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se envió ninguna imagen' });
+    const imagePath = `/${PROFILE_IMAGES_DIR}/${req.file.filename}`;
+    const targetUserId = req.body.userId || req.user._id;
+    await userBll.setProfileImage(targetUserId, imagePath, req.user);
+
+    res.status(200).json({ success: true, imageUrl: imagePath });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al subir la imagen de perfil', details: err.message });
+  }
+};
+
+// TOOD -> Gestion de documentos
+// exports.uploadDocument = async (req, res) => {
+//   try {
+//     if (!req.file) return res.status(400).json({ error: 'No se envió ningún documento' });
+
+//     const filePath = `/${DOCUMENTS_DIR}/${req.file.filename}`;
+//     const targetUserId = req.body.userId || req.user._id;
+//     await userBll.setDocument(targetUserId, filePath, req.user);
+//     res.status(200).json({ success: true, fileUrl: filePath });
+//   } catch (err) {
+//     res.status(500).json({ error: 'Error al subir el documento', details: err.message });
+//   }
+// };

@@ -1,0 +1,10 @@
+// utils/CustomError.js
+class CustomError extends Error {
+  constructor (status, message) {
+    super(message);
+    this.status = status;
+    this.name = 'CustomError';
+  }
+}
+
+module.exports = CustomError;

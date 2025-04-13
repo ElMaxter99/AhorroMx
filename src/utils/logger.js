@@ -4,9 +4,17 @@ const fs = require('fs');
 const path = require('path');
 const config = require('../../config/index');
 
+const { NODE_ENVS } = require('../enums/constants');
+
 // Crear directorio de logs si no existe
 const logDir = path.join(__dirname, '../logs');
-if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
+try {
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir);
+  }
+} catch (err) {
+  console.error(`Error al crear directorio de logs: ${err.message}`);
+}
 
 // Crear streams para morgan
 const createLogStream = (filename) =>
@@ -33,47 +41,54 @@ const customFormat = winston.format.printf(({ timestamp, level, message, stack }
 
 // Logger principal
 const logger = winston.createLogger({
-  level: config.NODE_ENV === 'development' ? 'debug' : 'info',
+  level: config.NODE_ENV === NODE_ENVS.DEV ? 'debug' : 'info', // Establecer el nivel en función del entorno
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     customFormat
   ),
   transports: [
-    new winston.transports.Console(), // Solo usa customFormat con colores
+    new winston.transports.Console({
+      level: 'debug', // Aseguramos que el nivel de consola reciba desde 'debug' hacia arriba
+      format: winston.format.combine(
+        winston.format.colorize(), // Coloriza los logs
+        winston.format.simple() // Simple, más legible en consola
+      )
+    }),
     new winston.transports.File({
       filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 10485760,
+      level: 'error', // Solo errores se van a este archivo
+      maxsize: 10485760, // 10MB
       maxFiles: 5
     }),
     new winston.transports.File({
       filename: path.join(logDir, 'access.log'),
-      level: 'info',
-      maxsize: 10485760,
+      level: 'info', // Los logs de 'info' y superiores
+      maxsize: 10485760, // 10MB
       maxFiles: 5
     })
   ]
 });
 
 // Morgan para accesos HTTP
-const morganFormat = config.NODE_ENV === 'production' ? 'combined' : 'dev';
+const morganFormat = config.NODE_ENV === NODE_ENVS.PRODUCTION ? 'combined' : 'dev';
 
+// Middleware para loguear todas las solicitudes HTTP
 const httpLogger = morgan(morganFormat, {
-  skip: (req, res) => res.statusCode >= 400,
+  skip: (req, res) => res.statusCode >= 400, // Omite logs de errores 4xx y 5xx
   stream: {
     write: (msg) => {
-      logger.info(msg.trim());
+      logger.info(msg.trim()); // Logs de acceso 'info'
       accessLogStream.write(msg);
     }
   }
 });
 
-// Morgan solo para errores 4xx y 5xx
+// Middleware para loguear solo errores 4xx y 5xx
 const httpErrorLogger = morgan(morganFormat, {
-  skip: (req, res) => res.statusCode < 400,
+  skip: (req, res) => res.statusCode < 400, // Solo loguea errores
   stream: {
     write: (msg) => {
-      logger.error(msg.trim());
+      logger.error(msg.trim()); // Logs de errores 'error'
       errorLogStream.write(msg);
     }
   }

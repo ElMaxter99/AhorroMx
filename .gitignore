@@ -43,3 +43,6 @@ package-lock.json
 #VsCode
 .vscode
 .vscode-test
+
+# Files uploaded by the user
+/files

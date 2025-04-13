@@ -1,0 +1,21 @@
+const CustomError = require('./CustomError');
+
+const { NODE_ENVS } = require('../enums/constants');
+
+const { logger } = require('./logger');
+const config = require('../../config');
+
+exports.handleError = (res, status = 500, message = 'Error interno del servidor') => {
+  return res.status(status).json({ error: message });
+};
+
+// Alternativa que recibe el error completo
+exports.handleCaughtError = (res, err) => {
+  if (err instanceof CustomError) {
+    return res.status(err.status).json({ error: err.message });
+  }
+
+  if (config.NODE_ENV === NODE_ENVS.DEV) { logger.error('[handleCaughtError]', err); }
+
+  return res.status(500).json({ error: 'Error interno del servidor' });
+};

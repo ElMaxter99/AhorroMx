@@ -3,8 +3,10 @@
 const userRepository = require('../repository/user');
 
 const groupBll = require('./group');
+const multiavatarBll = require('./multiavatar');
 
 const { USER_ROLES } = require('../enums/user');
+const { DEFAULT_IMG_DIR } = require('../enums/default');
 
 function sanitizeUser (user) {
   if (!user) return null;
@@ -34,10 +36,10 @@ function hasUserRole (user) {
 };
 exports.isUser = hasUserRole;
 
-function isSameUser (userId, user) {
+function sameUser (userId, user) {
   return user._id.toString() === userId.toString();
 }
-exports.isSameUser = isSameUser;
+exports.sameUser = sameUser;
 
 function isUserActive (user) {
   return user.active;
@@ -59,6 +61,44 @@ function hasRole (user, role) {
 }
 exports.hasRole = hasRole;
 
+function isSameUser (userOne, userTwo) {
+  userOne = userOne._id ? userOne._id.toString() : userOne.toString();
+  userTwo = userTwo._id ? userTwo._id.toString() : userTwo.toString();
+  return userOne === userTwo;
+}
+exports.isSameUser = isSameUser;
+
+async function generateDefaultAvatar (userId, options = {}) {
+  const customSeed = options.customSeed || userId.toString();
+  const multiavatarOptions = { seed: customSeed };
+  const { svg, seed } = multiavatarBll.getAvatarSvgWithSeed(multiavatarOptions);
+  if (!svg) {
+    throw new Error('No se pudo generar el avatar');
+  }
+
+  const filepath = await multiavatarBll.saveAvatarToDisk(userId, svg, seed);
+  return { filepath, seed };
+}
+exports.generateDefaultAvatar = generateDefaultAvatar;
+
+async function setProfileImage (userId, imagePath, user) {
+  const isAdmin = hasAdminRole(user);
+  const sameUser = isSameUser(userId, user._id);
+
+  if (!isAdmin && !sameUser) {
+    throw new Error('No tienes permiso para actualizar la imagen de perfil de este usuario.');
+  }
+
+  try {
+    const result = await userRepository.updateProfilePicture(userId, imagePath);
+    return !!result;
+  } catch (error) {
+    console.error('Error al actualizar la imagen de perfil:', error);
+    throw new Error('Hubo un error al actualizar la imagen de perfil.');
+  }
+}
+exports.setProfileImage = setProfileImage;
+
 async function createUser (data, user) {
   if (!data || !user) {
     throw new Error('Datos de usuario o usuario no proporcionados.');
@@ -76,6 +116,22 @@ async function createUser (data, user) {
   return !!savedUser;
 };
 exports.createUser = createUser;
+
+async function registerUser (data) {
+  if (!data) {
+    throw new Error('Datos de usuario no proporcionados.');
+  }
+
+  data.role = [USER_ROLES.USER];
+  data.active = false;
+  data.profileInfo = data.profileInfo || {};
+  data.profileInfo.photoUrl = await generateDefaultAvatar(data.multiAvatarSeed) || DEFAULT_IMG_DIR.PROFILE_PIC_DIR;
+  data.profileInfo.backgroundUrl = data.profileInfo.backgroundUrl || DEFAULT_IMG_DIR.BACKGROUND_DIR;
+
+  const savedUser = await userRepository.create(data);
+  return !!savedUser;
+}
+exports.register = registerUser;
 
 async function getList (options = {}, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
@@ -95,10 +151,10 @@ exports.getList = getList;
 
 async function getById (userId, user) {
   const isAdmin = hasAdminRole(user);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
   const hasGroupsInCommon = groupBll.hasGroupsInCommon(userId, user._id);
 
-  if (!isAdmin && !isSameUser && !hasGroupsInCommon) {
+  if (!isAdmin && !sameUser && !hasGroupsInCommon) {
     throw new Error('No tienes permiso para ver este usuario.');
   }
 
@@ -118,10 +174,10 @@ exports.getById = getById;
 
 async function getProfile (userId, user) {
   const isAdmin = hasAdminRole(user);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
   const hasGroupsInCommon = groupBll.hasGroupsInCommon(userId, user._id);
 
-  if (!isAdmin && !isSameUser && !hasGroupsInCommon) {
+  if (!isAdmin && !sameUser && !hasGroupsInCommon) {
     throw new Error('No tienes permiso para ver este usuario.');
   }
 
@@ -206,9 +262,9 @@ exports.update = updateUser;
 
 async function updatePassword (userId, newPlainPassword, user) {
   const isAdmin = hasAdminRole(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar la contraseña de este usuario.');
   }
 
@@ -224,9 +280,9 @@ exports.updatePassword = updatePassword;
 
 async function updateUserEmail (userId, newEmail, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar el correo electrónico de este usuario.');
   }
 
@@ -242,9 +298,9 @@ exports.updateUserEmail = updateUserEmail;
 
 async function updateUserProfileInfo (userId, profileInfo, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar la información del perfil de este usuario.');
   }
 
@@ -260,9 +316,9 @@ exports.updateUserProfileInfo = updateUserProfileInfo;
 
 async function updateProfilePicture (userId, profileInfo, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar la foto de perfil de este usuario.');
   }
 
@@ -278,15 +334,15 @@ exports.updateProfilePicture = updateProfilePicture;
 
 async function activateUser (userId, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
   const userToActivate = await getById(userId);
   const isBlocked = isUserBlocked(userToActivate);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar el estado de este usuario.');
   }
 
-  if (isBlocked && isSameUser) {
+  if (isBlocked && sameUser) {
     throw new Error('No puedes activar tu cuenta si estás bloqueado.');
   }
 
@@ -302,9 +358,9 @@ exports.activateUser = activateUser;
 
 async function deactivateUser (userId, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para actualizar el estado de este usuario.');
   }
 
@@ -355,9 +411,9 @@ exports.unblockUser = unblockUser;
 
 async function falseDeleteUser (userId, user) {
   const isAdmin = user.role.includes(USER_ROLES.ADMIN);
-  const isSameUser = user._id === userId;
+  const sameUser = isSameUser(userId, user._id);
 
-  if (!isAdmin && !isSameUser) {
+  if (!isAdmin && !sameUser) {
     throw new Error('No tienes permiso para eliminar a este usuario.');
   }
 
