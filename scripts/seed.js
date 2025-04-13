@@ -40,7 +40,7 @@ const seedDatabase = async () => {
 
     if (!groupsOnly && !categoriesOnly) {
       // Crear usuarios
-      admin = await User.create({
+      admin = new User({
         username: config.SEED.ADMIN.USERNAME,
         email: config.SEED.ADMIN.EMAIL,
         credentials: {
@@ -48,8 +48,9 @@ const seedDatabase = async () => {
         },
         role: ['ADMIN']
       });
+      await admin.save();
 
-      user = await User.create({
+      user = new User({
         username: config.SEED.USER.EMAIL,
         email: config.SEED.USER.EMAIL,
         credentials: {
@@ -57,8 +58,9 @@ const seedDatabase = async () => {
         },
         role: ['USER']
       });
+      await user.save();
 
-      userAdmin = await User.create({
+      userAdmin = new User({
         username: config.SEED.USERADMIN.USERNAME,
         email: config.SEED.USERADMIN.EMAIL,
         credentials: {
@@ -66,6 +68,7 @@ const seedDatabase = async () => {
         },
         role: ['ADMIN', 'USER']
       });
+      await userAdmin.save();
 
       logger.info('✅ Usuarios creados');
     }
