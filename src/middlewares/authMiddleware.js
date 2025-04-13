@@ -1,8 +1,10 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const config = require('../../config');
+const userBll = require('../bll/user');
+const tokenBll = require('../bll/token');
+
+const userRepository = require('../repository/user');
+
 const { handleError } = require('../utils/errorHandler');
-const CustomError = require('../utils/CustomError'); // Asegúrate de importar esto
+const CustomError = require('../utils/CustomError');
 
 // 🔧 Función auxiliar para extraer y verificar el token
 const extractAndVerifyToken = (req) => {
@@ -18,9 +20,7 @@ const extractAndVerifyToken = (req) => {
 
   let decoded;
   try {
-    decoded = jwt.verify(token, config.PUBLIC_KEY, {
-      algorithms: [config.JWT_ALGORITHM]
-    });
+    decoded = tokenBll.verify(token);
   } catch (err) {
     throw new CustomError(401, 'Token inválido o expirado.');
   }
@@ -36,13 +36,12 @@ const extractAndVerifyToken = (req) => {
 exports.authMiddleware = async (req, res, next) => {
   try {
     const userId = extractAndVerifyToken(req);
-
-    const user = await User.findById(userId).select('-password');
-    if (!user) {
+    const user = await userRepository.getById(userId);
+    if (!user || user.deleted) {
       throw new CustomError(401, 'Usuario no encontrado.');
     }
 
-    if (!user.active) {
+    if (!user.active || user.blocked) {
       throw new CustomError(403, 'Cuenta desactivada. Contacta al soporte.');
     }
 
@@ -67,7 +66,7 @@ exports.verifyToken = async (req, res, next) => {
 // 👤 Middleware para cargar el usuario desde req.userId
 exports.loadUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId).select('-password');
+    const user = await userBll.getById(req.userId);
     if (!user) {
       throw new CustomError(401, 'Usuario no encontrado.');
     }

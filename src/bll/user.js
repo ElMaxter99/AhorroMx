@@ -1,11 +1,13 @@
 'use strict';
 
+const bcrypt = require('bcryptjs');
+
 const userRepository = require('../repository/user');
 
 const groupBll = require('./group');
 const multiavatarBll = require('./multiavatar');
 
-const { USER_ROLES } = require('../enums/user');
+const USER_ROLES = require('../enums/user').ROLES;
 const { DEFAULT_IMG_DIR } = require('../enums/default');
 
 function sanitizeUser (user) {
@@ -27,7 +29,7 @@ function sanitizeUsers (users) {
 exports.sanitizeUsers = sanitizeUsers;
 
 function hasAdminRole (user) {
-  return user.role.includes(USER_ROLES.ADMIN);
+  return user?.role?.includes(USER_ROLES.ADMIN);
 }
 exports.hasAdminRole = hasAdminRole;
 
@@ -140,12 +142,7 @@ async function getList (options = {}, user) {
   }
 
   const users = await userRepository.find(options).select('-password -passwordHistory -__v').lean();
-  if (options.noSanitize) {
-    return users;
-  }
-
-  const usersSanitized = sanitizeUsers(users);
-  return usersSanitized;
+  return users;
 };
 exports.getList = getList;
 
@@ -164,7 +161,7 @@ async function getById (userId, user) {
       return null;
     }
 
-    return sanitizeUser(user);
+    return user;
   } catch (error) {
     console.error('Error al obtener el usuario:', error);
     throw new Error('Hubo un error al obtener el usuario.');
@@ -187,7 +184,7 @@ async function getProfile (userId, user) {
       return null;
     }
 
-    return sanitizeUser(user);
+    return user;
   } catch (error) {
     console.error('Error al obtener el usuario:', error);
     throw new Error('Hubo un error al obtener el usuario.');
@@ -410,7 +407,7 @@ async function unblockUser (userId, user) {
 exports.unblockUser = unblockUser;
 
 async function falseDeleteUser (userId, user) {
-  const isAdmin = user.role.includes(USER_ROLES.ADMIN);
+  const isAdmin = hasAdminRole(user);
   const sameUser = isSameUser(userId, user._id);
 
   if (!isAdmin && !sameUser) {
@@ -427,3 +424,33 @@ async function falseDeleteUser (userId, user) {
   }
 };
 exports.falseDeleteUser = falseDeleteUser;
+
+async function getByEmail (email, user = null, options = {}) {
+  if (!email) {
+    throw new Error('El campo "email" es requerido !');
+  }
+
+  const userByEmail = await userRepository.getByEmail(email, options);
+  if (!userByEmail) { return null; };
+
+  if (!user) { return userByEmail; };
+
+  const isAdmin = hasAdminRole(user);
+  const sameUser = isSameUser(userByEmail, user._id);
+  if (!isAdmin && !sameUser) {
+    return null;
+  }
+
+  return userByEmail;
+}
+exports.getByEmail = getByEmail;
+
+async function comparePassword (user, password) {
+  if (!user || !password) {
+    throw new Error('Error al comprobar las contraseñas');
+  }
+
+  const encryptedUserPass = user?.credentials?.password || '';
+  return bcrypt.compare(password, encryptedUserPass);
+}
+exports.comparePassword = comparePassword;

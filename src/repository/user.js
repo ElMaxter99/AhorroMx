@@ -67,18 +67,6 @@ function getProjectionFromOptions (options = {}) {
 
 function getPopulationFromOptions (options = {}) {
   const population = [];
-  if (options.populateOwner) {
-    population.push({ path: 'owner', select: '-credentials' });
-  }
-
-  if (options.populateAdmins) {
-    population.push({ path: 'admins', select: '-credentials' });
-  }
-
-  if (options.populateMembers) {
-    population.push({ path: 'members', select: '-credentials' });
-  }
-
   return population;
 }
 
@@ -121,10 +109,10 @@ async function updateUser (userId, userData) {
 }
 
 async function getUser (options = {}) {
-  const { filter, projection } = buildQueryProjectionAndPopulation(options);
+  const { query, projection } = buildQueryProjectionAndPopulation(options);
 
   try {
-    const user = await User.findOne(filter, projection);
+    const user = await User.findOne(query, projection);
     if (!user) {
       throw new Error('User not found');
     }
@@ -132,6 +120,18 @@ async function getUser (options = {}) {
     return user;
   } catch (error) {
     throw new Error('Error fetching user: ' + error.message);
+  }
+}
+
+async function getByEmail (email, options = {}) {
+  console.log('🚀 ~ getByEmail ~ email:', email);
+  try {
+    const { projection, population } = buildQueryProjectionAndPopulation(options);
+    const user = await User.findOne({ email }, projection).populate(population);
+    console.log('🚀 ~ getByEmail ~ projection, population:', projection, population);
+    return user;
+  } catch (error) {
+    throw new Error('Error fetching user by ID: ' + error.message);
   }
 }
 
@@ -167,10 +167,10 @@ async function deleteUser (userId) {
 }
 
 async function getUserList (options = {}) {
-  const { filter, projection } = buildQueryProjectionAndPopulation(options);
+  const { query, projection } = buildQueryProjectionAndPopulation(options);
 
   try {
-    const users = await User.find(filter, projection);
+    const users = await User.find(query, projection);
     return users;
   } catch (error) {
     throw new Error('Error listing users: ' + error.message);
@@ -347,6 +347,7 @@ module.exports = {
   create: createUser,
   update: updateUser,
   get: getUser,
+  getByEmail,
   getById,
   getProfile,
   getList: getUserList,
