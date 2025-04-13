@@ -9,7 +9,7 @@ const userBll = require('./user');
 const config = require('../../config');
 
 async function verify (token) {
-  return jwt.verify(token, config.JWT_PUBLIC_KEY, {
+  return await jwt.verify(token, config.JWT_PUBLIC_KEY, {
     algorithms: [config.JWT_ALGORITHM]
   });
 }
@@ -28,7 +28,7 @@ async function decode (token) {
 exports.decode = decode;
 
 async function sign (payload) {
-  return jwt.sign(payload, config.PRIVATE_KEY, {
+  return await jwt.sign(payload, config.JWT_PRIVATE_KEY, {
     algorithm: config.JWT_ALGORITHM,
     expiresIn: config.JWT_EXPIRATION
   });
@@ -49,12 +49,22 @@ async function getToken (token, user) {
   const isAdmin = userBll.hasAdminRole(user);
 
   if (!isAdmin && !isSameUser) {
-    throw new Error('No tienes permisos para optener el token');
+    throw new Error('No tienes permisos para obtener el token');
   }
 
   return tokenFromDb;
 }
 exports.getToken = getToken;
+
+async function getAvalibleToken (user) {
+  if (!user) {
+    throw new Error('getAvalibleToken: User no proporcionados');
+  }
+
+  const tokenFromDb = tokenRepository.getAvalibleToken(user._id);
+  return tokenFromDb;
+}
+exports.getAvalibleToken = getAvalibleToken;
 
 async function createToken (data, user) {
   if (!data || !user) {

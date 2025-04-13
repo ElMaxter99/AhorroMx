@@ -124,11 +124,9 @@ async function getUser (options = {}) {
 }
 
 async function getByEmail (email, options = {}) {
-  console.log('🚀 ~ getByEmail ~ email:', email);
   try {
     const { projection, population } = buildQueryProjectionAndPopulation(options);
     const user = await User.findOne({ email }, projection).populate(population);
-    console.log('🚀 ~ getByEmail ~ projection, population:', projection, population);
     return user;
   } catch (error) {
     throw new Error('Error fetching user by ID: ' + error.message);
