@@ -24,11 +24,27 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const token = req.token;
-    await authBll.invalidateToken(token, req.user);
+    const { refreshToken } = req.user;
+    await authBll.invalidateToken(refreshToken, req.user);
     res.status(200).json({ message: 'Sesión cerrada correctamente.' });
   } catch (err) {
     logger.error('Logout error:', err);
     handleError(res, 500, err.message);
+  }
+};
+
+exports.refreshAccessToken = async function refreshAccessToken (req, res) {
+  try {
+    if (!req.body.refreshToken) {
+      return res.status(400).json({ message: 'Refresh token requerido' });
+    }
+
+    const { accessToken, refreshToken } = await authBll.refreshAccessToken(req.body.refreshToken);
+    res.status(200).json({
+      accessToken,
+      refreshToken
+    });
+  } catch (error) {
+    res.status(401).json({ message: 'Refresh token inválido o expirado' });
   }
 };

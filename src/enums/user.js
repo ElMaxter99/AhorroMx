@@ -6,5 +6,5 @@ const ROLES = {
 };
 
 module.exports = {
-  ROLES: ROLES
+  ROLES
 };

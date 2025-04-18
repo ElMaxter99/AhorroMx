@@ -47,7 +47,8 @@ module.exports = {
   JWT_PRIVATE_KEY: loadKey(jwtPrivateKeyPath, 'Clave privada'),
   JWT_PUBLIC_KEY: loadKey(jwtPublicKeyPath, 'Clave pública'),
   JWT_ALGORITHM: 'RS256', // Algoritmo de firma RSA
-  JWT_EXPIRATION: process.env.JWT_EXPIRATION || '1d',
+  JWT_EXPIRATION: process.env.JWT_EXPIRATION || '15m',
+  JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION || '7d',
   SALT_ROUNDS: parseInt(process.env.SALT_ROUNDS) || 10,
 
   SEED: {

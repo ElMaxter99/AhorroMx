@@ -2,6 +2,21 @@
 
 const Token = require('../models/token');
 
+const logger = require('../utils/logger');
+
+async function getById (tokenId) {
+  try {
+    if (!tokenId) {
+      throw new Error('Invalid input: tokenId is required!');
+    }
+
+    const result = await Token.getById(tokenId);
+    return result;
+  } catch (error) {
+    throw new Error('Error getting token by _id: ', error);
+  }
+}
+
 async function getToken (token) {
   try {
     if (!token) {
@@ -59,9 +74,28 @@ async function invalidateToken (token) {
   }
 }
 
+async function update (tokenId, tokenData) {
+  try {
+    if (!tokenId || !tokenData) {
+      throw new Error('Invalid input: tokenId and tokenData are required');
+    }
+
+    const result = await Token.findByIdAndUpdate(tokenId, tokenData);
+    if (!result) {
+      logger.error('Token not found or no changes made');
+    }
+
+    return result;
+  } catch (error) {
+    throw new Error('Error updating token' + error);
+  }
+}
+
 module.exports = {
   getToken,
+  getById,
   getAvalibleToken,
   create: createToken,
-  invalidateToken
+  invalidateToken,
+  update
 };
