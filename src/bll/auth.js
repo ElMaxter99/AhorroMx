@@ -4,12 +4,14 @@ const tokenBll = require('../bll/token');
 const userBll = require('../bll/user');
 
 async function getAuthToken (user) {
-  const avalibleAuthToken = await tokenBll.getAvalibleToken(user);
-  if (avalibleAuthToken) { return avalibleAuthToken; }
+  const existingTokenPair = await tokenBll.getAvalibleTokenPair(user);
+  if (existingTokenPair) {
+    return existingTokenPair;
+  }
 
-  const newAuthToken = await tokenBll.generateTokenPair(user);
-  return newAuthToken;
-};
+  const newTokenPair = await tokenBll.generateTokenPair(user);
+  return newTokenPair;
+}
 exports.getAuthToken = getAuthToken;
 
 async function invalidateToken (token, user) {

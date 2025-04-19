@@ -4,6 +4,8 @@ const Token = require('../models/token');
 
 const logger = require('../utils/logger');
 
+const TOKEN_TYPES = require('../enums/token').TYPES;
+
 async function getById (tokenId) {
   try {
     if (!tokenId) {
@@ -30,14 +32,34 @@ async function getToken (token) {
   }
 }
 
-async function getAvalibleToken (userId) {
+async function getAvalibleAccessToken (userId) {
   try {
     if (!userId) {
-      throw new Error('Invalid inout userId is required !');
+      throw new Error('Invalid input userId is required !');
     }
 
     const result = await Token.findOne({
-      user: userId, // el ObjectId del usuario
+      user: userId,
+      type: TOKEN_TYPES.ACCESS_TOKEN,
+      expiresAt: { $gt: new Date() },
+      valid: true
+    });
+
+    return result;
+  } catch (error) {
+    throw new Error('Error getting avalible token: ', error);
+  }
+}
+
+async function getAvalibleRefreshToken (userId) {
+  try {
+    if (!userId) {
+      throw new Error('Invalid input userId is required !');
+    }
+
+    const result = await Token.findOne({
+      user: userId,
+      type: TOKEN_TYPES.REFRESH_TOKEN,
       expiresAt: { $gt: new Date() },
       valid: true
     });
@@ -74,6 +96,32 @@ async function invalidateToken (token) {
   }
 }
 
+async function invalidateRefreshTokenByUser (userId) {
+  try {
+    if (!userId) {
+      throw new Error('Invalid input: token is required !');
+    }
+
+    const result = await Token.findOneAndUpdate({ user: userId, type: TOKEN_TYPES.REFRESH_TOKEN }, { valid: false }, { new: true });
+    return result;
+  } catch (error) {
+    throw new Error('Error when invalidate token:', error);
+  }
+}
+
+async function invalidateAccessTokenByUser (userId) {
+  try {
+    if (!userId) {
+      throw new Error('Invalid input: token is required !');
+    }
+
+    const result = await Token.findOneAndUpdate({ user: userId, type: TOKEN_TYPES.ACCESS_TOKEN }, { valid: false }, { new: true });
+    return result;
+  } catch (error) {
+    throw new Error('Error when invalidate token:', error);
+  }
+}
+
 async function update (tokenId, tokenData) {
   try {
     if (!tokenId || !tokenData) {
@@ -94,8 +142,11 @@ async function update (tokenId, tokenData) {
 module.exports = {
   getToken,
   getById,
-  getAvalibleToken,
+  getAvalibleAccessToken,
+  getAvalibleRefreshToken,
   create: createToken,
   invalidateToken,
+  invalidateRefreshTokenByUser,
+  invalidateAccessTokenByUser,
   update
 };

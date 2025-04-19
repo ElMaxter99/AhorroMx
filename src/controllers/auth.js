@@ -14,8 +14,8 @@ exports.login = async (req, res) => {
       return handleError(res, 401, 'Credenciales inválidas.');
     }
 
-    const token = await authBll.getAuthToken(userFromDb);
-    res.status(200).json({ token });
+    const response = await authBll.getAuthToken(userFromDb);
+    res.status(200).json(response);
   } catch (err) {
     logger.error('Login error:', err);
     handleError(res, 500, err.message);

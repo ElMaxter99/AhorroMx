@@ -89,15 +89,24 @@ async function getToken (token, user) {
 }
 exports.getToken = getToken;
 
-async function getAvalibleToken (user) {
+async function getAvalibleTokenPair (user) {
   if (!user) {
-    throw new Error('getAvalibleToken: User no proporcionados');
+    throw new Error('getAvalibleTokenPair: User no proporcionados');
   }
 
-  const tokenFromDb = tokenRepository.getAvalibleToken(user._id);
-  return tokenFromDb;
+  const accessToken = await tokenRepository.getAvalibleAccessToken(user._id);
+  const refreshToken = await tokenRepository.getAvalibleRefreshToken(user._id);
+
+  if (!accessToken || !refreshToken) { return null; }
+
+  return {
+    accessToken: accessToken.token,
+    refreshToken: refreshToken.token,
+    accessTokenExpiresAt: accessToken.expiresAt,
+    refreshTokenExpiresAt: refreshToken.expiresAt
+  };
 }
-exports.getAvalibleToken = getAvalibleToken;
+exports.getAvalibleTokenPair = getAvalibleTokenPair;
 
 async function createToken (data, user) {
   if (!data || !user) {
@@ -136,6 +145,10 @@ async function invalidateToken (token, user) {
 exports.invalidateToken = invalidateToken;
 
 async function generateTokenPair (user) {
+  // Invalidar el resto de tokens antes de generar nuevos
+  await tokenRepository.invalidateAccessTokenByUser(user._id);
+  await tokenRepository.invalidateRefreshTokenByUser(user._id);
+
   const payload = { userId: user._id };
 
   const accessToken = await sign(payload);
