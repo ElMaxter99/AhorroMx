@@ -24,8 +24,8 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    const { refreshToken } = req.user;
-    await authBll.invalidateToken(refreshToken, req.user);
+    await authBll.invalidateAccessToken(req.user._id, req.user);
+    await authBll.invalidateRefreshToken(req.user._id, req.user);
     res.status(200).json({ message: 'Sesión cerrada correctamente.' });
   } catch (err) {
     logger.error('Logout error:', err);

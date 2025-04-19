@@ -19,6 +19,38 @@ async function invalidateToken (token, user) {
 }
 exports.invalidateToken = invalidateToken;
 
+async function invalidateAccessToken (userId, user) {
+  if (!userId || !user) {
+    throw new Error('invalidateAccessToken required userId and User');
+  }
+
+  const isAdmin = userBll.hasAdminRole(user);
+  const isSameUser = userBll.isSameUser(userId, user);
+
+  if (!isAdmin && isSameUser) {
+    throw new Error('Error invalidateAccessToken, permission error');
+  }
+
+  return await tokenBll.invalidateAccessToken(userId, user);
+}
+exports.invalidateAccessToken = invalidateAccessToken;
+
+async function invalidateRefreshToken (userId, user) {
+  if (!userId || !user) {
+    throw new Error('invalidateRefreshToken required userId and User');
+  }
+
+  const isAdmin = userBll.hasAdminRole(user);
+  const isSameUser = userBll.isSameUser(userId, user);
+
+  if (!isAdmin && isSameUser) {
+    throw new Error('Error invalidateRefreshToken, permission error');
+  }
+
+  return await tokenBll.invalidateRefreshToken(userId, user);
+}
+exports.invalidateRefreshToken = invalidateRefreshToken;
+
 async function refreshAccessToken (refreshToken) {
   const decoded = await tokenBll.decode(refreshToken);
 

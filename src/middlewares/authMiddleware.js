@@ -7,7 +7,7 @@ const { handleError } = require('../utils/errorHandler');
 const CustomError = require('../utils/CustomError');
 
 // 🔧 Función auxiliar para extraer y verificar el token
-const extractAndVerifyToken = (req) => {
+async function extractAndVerifyToken (req) {
   const authHeader = req.header('Authorization');
   if (!authHeader) {
     throw new CustomError(401, 'Acceso denegado. Token no proporcionado.');
@@ -20,7 +20,10 @@ const extractAndVerifyToken = (req) => {
 
   let decoded;
   try {
-    decoded = tokenBll.verify(token);
+    decoded = await tokenBll.verify(token);
+    if (!decoded.valid) {
+      throw new CustomError(401, 'Token inválido o expirado.');
+    }
   } catch (err) {
     throw new CustomError(401, 'Token inválido o expirado.');
   }
@@ -35,7 +38,7 @@ const extractAndVerifyToken = (req) => {
 // 🔐 Middleware completo de autenticación (token + usuario)
 exports.authMiddleware = async (req, res, next) => {
   try {
-    const userId = extractAndVerifyToken(req);
+    const userId = await extractAndVerifyToken(req);
     const user = await userRepository.getById(userId);
     if (!user || user.deleted) {
       throw new CustomError(401, 'Usuario no encontrado.');
@@ -55,7 +58,7 @@ exports.authMiddleware = async (req, res, next) => {
 // 🔐 Middleware solo para verificar el token
 exports.verifyToken = async (req, res, next) => {
   try {
-    const userId = extractAndVerifyToken(req);
+    const userId = await extractAndVerifyToken(req);
     req.userId = userId;
     next();
   } catch (err) {

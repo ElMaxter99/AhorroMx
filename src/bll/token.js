@@ -23,17 +23,19 @@ async function isAccessToken (token) {
 exports.isAccessToken = isAccessToken;
 
 async function verify (token) {
-  return await jwt.verify(token, config.JWT_PUBLIC_KEY, {
-    algorithms: [config.JWT_ALGORITHM]
-  });
+  try {
+    return await jwt.verify(token, config.JWT_PUBLIC_KEY, {
+      algorithms: [config.JWT_ALGORITHM]
+    });
+  } catch (err) {
+    return false;
+  }
 }
 exports.verify = verify;
 
 async function decode (token) {
   try {
-    const decoded = await jwt.verify(token, config.JWT_PUBLIC_KEY, {
-      algorithms: [config.JWT_ALGORITHM]
-    });
+    const decoded = await verify(token);
     return decoded;
   } catch (err) {
     throw new Error('Token inválido o expirado');
@@ -139,15 +141,35 @@ async function invalidateToken (token, user) {
   const expirationTime = ms(config.JWT_EXPIRATION);
   token.expiresAt = new Date(Date.now() + expirationTime);
 
-  const createdToken = await tokenRepository.invalidateToken(token);
-  return createdToken;
+  const invalidatedToken = await tokenRepository.invalidateToken(token);
+  return invalidatedToken;
 }
 exports.invalidateToken = invalidateToken;
 
+async function invalidateAccessToken (userId, user) {
+  if (!userId || !user) {
+    throw new Error('Datos del userId o usuario no proporcionado');
+  }
+
+  const invalidToken = await tokenRepository.invalidateAccessToken(userId);
+  return invalidToken;
+}
+exports.invalidateAccessToken = invalidateAccessToken;
+
+async function invalidateRefreshToken (userId, user) {
+  if (!userId || !user) {
+    throw new Error('Datos del userId o usuario no proporcionado');
+  }
+
+  const invalidToken = await tokenRepository.invalidateRefreshToken(userId);
+  return invalidToken;
+}
+exports.invalidateRefreshToken = invalidateRefreshToken;
+
 async function generateTokenPair (user) {
   // Invalidar el resto de tokens antes de generar nuevos
-  await tokenRepository.invalidateAccessTokenByUser(user._id);
-  await tokenRepository.invalidateRefreshTokenByUser(user._id);
+  await tokenRepository.invalidateAccessToken(user._id);
+  await tokenRepository.invalidateRefreshToken(user._id);
 
   const payload = { userId: user._id };
 

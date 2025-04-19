@@ -7,7 +7,7 @@ const { TYPES } = require('../enums/token');
 const tokenSchema = new mongoose.Schema({
   token: { type: String, required: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  expiresAt: { type: Date, required: true },
+  expiresAt: { type: Date },
   valid: { type: Boolean, default: true },
   type: { type: String, enum: Object.values(TYPES) }
 }, { timestamps: true });

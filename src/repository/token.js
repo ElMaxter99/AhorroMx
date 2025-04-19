@@ -96,30 +96,36 @@ async function invalidateToken (token) {
   }
 }
 
-async function invalidateRefreshTokenByUser (userId) {
-  try {
-    if (!userId) {
-      throw new Error('Invalid input: token is required !');
-    }
+/**
+ * Invalida un token de usuario según el tipo.
+ * @param {String} userId - ID del usuario.
+ * @param {String} tokenType - Tipo de token a invalidar (e.g., ACCESS_TOKEN, REFRESH_TOKEN).
+ * @returns {Promise<Object|null>}
+ */
+async function invalidateTokenByType (userId, tokenType) {
+  if (!userId || !tokenType) {
+    throw new Error('User ID and token type are required');
+  }
 
-    const result = await Token.findOneAndUpdate({ user: userId, type: TOKEN_TYPES.REFRESH_TOKEN }, { valid: false }, { new: true });
-    return result;
-  } catch (error) {
-    throw new Error('Error when invalidate token:', error);
+  try {
+    return await Token.findOneAndUpdate(
+      { user: userId, type: tokenType, valid: true },
+      { valid: false },
+      { new: true }
+    );
+  } catch (err) {
+    console.error(`Error invalidating ${tokenType} for user ${userId}:`, err);
+    throw new Error(`Could not invalidate ${tokenType}`);
   }
 }
 
-async function invalidateAccessTokenByUser (userId) {
-  try {
-    if (!userId) {
-      throw new Error('Invalid input: token is required !');
-    }
+// Uso específico
+async function invalidateAccessToken (userId) {
+  return invalidateTokenByType(userId, TOKEN_TYPES.ACCESS_TOKEN);
+}
 
-    const result = await Token.findOneAndUpdate({ user: userId, type: TOKEN_TYPES.ACCESS_TOKEN }, { valid: false }, { new: true });
-    return result;
-  } catch (error) {
-    throw new Error('Error when invalidate token:', error);
-  }
+async function invalidateRefreshToken (userId) {
+  return invalidateTokenByType(userId, TOKEN_TYPES.REFRESH_TOKEN);
 }
 
 async function update (tokenId, tokenData) {
@@ -146,7 +152,7 @@ module.exports = {
   getAvalibleRefreshToken,
   create: createToken,
   invalidateToken,
-  invalidateRefreshTokenByUser,
-  invalidateAccessTokenByUser,
+  invalidateRefreshToken,
+  invalidateAccessToken,
   update
 };
